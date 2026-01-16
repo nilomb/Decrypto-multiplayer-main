@@ -28,6 +28,9 @@ class OpponentChat {
     this.typingListener = null;
     this.typingTimeout = null;
     this.typingIndicator = null;
+    this.voiceBtn = null;
+    this.recognition = null;
+    this.isListening = false;
   }
 
   async init() {
@@ -48,6 +51,7 @@ class OpponentChat {
     this.messagesContainer = document.getElementById("opponent-chat-messages");
     this.input = document.getElementById("opponent-chat-input");
     this.sendBtn = document.getElementById("opponent-chat-send-btn");
+    this.voiceBtn = document.getElementById("opponent-chat-voice-btn");
     this.closeBtn = document.getElementById("opponent-chat-close-btn");
     this.teamTitle = document.getElementById("opponent-chat-team-title");
 
@@ -172,6 +176,7 @@ class OpponentChat {
     this.messagesContainer = document.getElementById("opponent-chat-messages");
     this.input = document.getElementById("opponent-chat-input");
     this.sendBtn = document.getElementById("opponent-chat-send-btn");
+    this.voiceBtn = document.getElementById("opponent-chat-voice-btn");
     this.closeBtn = document.getElementById("opponent-chat-close-btn");
     this.teamTitle = document.getElementById("opponent-chat-team-title");
 
@@ -179,6 +184,9 @@ class OpponentChat {
       console.warn("[OpponentChat] Overlay not found");
       return;
     }
+
+    // Setup voice recognition button (recreated per view)
+    this.setupVoiceButton();
 
     // Recreate typing indicator (view may have changed)
     const existingIndicator = this.overlay.querySelector(".typing-indicator");
@@ -269,6 +277,133 @@ class OpponentChat {
     }
 
     this.handleTypingStop();
+
+    // Stop voice recognition if running
+    if (this.isListening && this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (error) {}
+    }
+  }
+
+  setupVoiceButton() {
+    const SpeechRec =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const btn = document.getElementById("opponent-chat-voice-btn");
+
+    this.voiceBtn = btn;
+
+    if (!btn) return;
+
+    if (!SpeechRec) {
+      btn.disabled = true;
+      btn.title = "Voice input not supported on this browser";
+      return;
+    }
+
+    if (!this.recognition) {
+      this.recognition = new SpeechRec();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = "it-IT";
+    }
+
+    const stopListening = () => {
+      this.isListening = false;
+      btn.classList.remove("listening");
+      btn.textContent = "Voice";
+      try {
+        this.recognition.stop();
+      } catch (error) {}
+    };
+
+    const startListening = () => {
+      if (!this.input) return;
+
+      const hintKey = "voiceMicHintShown";
+      const maybeStart = () => {
+        this.isListening = true;
+        btn.classList.add("listening");
+        btn.textContent = "Stop";
+        try {
+          this.recognition.start();
+        } catch (error) {
+          stopListening();
+        }
+      };
+
+      if (!localStorage.getItem(hintKey)) {
+        this.showVoicePermissionModal(() => {
+          localStorage.setItem(hintKey, "1");
+          maybeStart();
+        });
+      } else {
+        maybeStart();
+      }
+    };
+
+    btn.onclick = () => {
+      if (this.isListening) {
+        stopListening();
+      } else {
+        startListening();
+      }
+    };
+
+    this.recognition.onresult = (event) => {
+      const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+      if (transcript) {
+        this.input.value = transcript;
+        this.input.focus();
+      }
+      stopListening();
+    };
+
+    this.recognition.onerror = () => {
+      stopListening();
+    };
+
+    this.recognition.onend = () => {
+      if (this.isListening) {
+        stopListening();
+      }
+    };
+  }
+
+  showVoicePermissionModal(onAccept) {
+    const modal = document.getElementById("voice-permission-modal");
+    const accept = document.getElementById("voice-modal-accept");
+    const cancel = document.getElementById("voice-modal-cancel");
+
+    if (!modal || !accept || !cancel) {
+      // Fallback to immediate start if modal is missing
+      onAccept?.();
+      return;
+    }
+
+    const closeModal = () => {
+      modal.classList.add("hidden");
+      accept.onclick = null;
+      cancel.onclick = null;
+      modal.onclick = null;
+    };
+
+    accept.onclick = () => {
+      closeModal();
+      onAccept?.();
+    };
+
+    cancel.onclick = () => {
+      closeModal();
+    };
+
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    };
+
+    modal.classList.remove("hidden");
   }
 
   closeChat() {

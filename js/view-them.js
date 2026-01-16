@@ -109,6 +109,7 @@ if (themMount) {
           <!-- Messages will be populated here -->
         </div>
         <div class="chat-input-area">
+          <button id="chat-voice-btn" class="voice-btn" type="button">Voice</button>
           <input type="text" id="chat-input" placeholder="Scrivi un messaggio..." maxlength="200">
           <button id="chat-send-btn">Invia</button>
         </div>
@@ -126,6 +127,7 @@ if (themMount) {
           <!-- Messages will be populated here -->
         </div>
         <div class="chat-input-area">
+          <button id="opponent-chat-voice-btn" class="voice-btn" type="button">Voice</button>
           <input type="text" id="opponent-chat-input" placeholder="Scrivi un messaggio..." maxlength="200">
           <button id="opponent-chat-send-btn">Invia</button>
         </div>
@@ -137,6 +139,18 @@ if (themMount) {
       <div class="clue-word-content">
         <div class="clue-word-label" id="clue-word-label">WORD</div>
         <button id="clue-word-confirm" class="clue-word-confirm">✓</button>
+      </div>
+    </div>
+
+    <!-- Voice permission modal (one-time guidance) -->
+    <div id="voice-permission-modal" class="voice-modal hidden">
+      <div class="voice-modal-content">
+        <h3>Abilita microfono</h3>
+        <p>Quando premi "Voice", il browser chiede il permesso microfono. Premi "Consenti", poi parla vicino al microfono e usa "Stop" per fermare la dettatura.</p>
+        <div class="voice-modal-actions">
+          <button id="voice-modal-cancel" class="voice-btn-secondary" type="button">Annulla</button>
+          <button id="voice-modal-accept" class="voice-btn-primary" type="button">Ho capito</button>
+        </div>
       </div>
     </div>
   `;
