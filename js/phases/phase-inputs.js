@@ -4,6 +4,7 @@
  */
 
 import { gameManager } from "../GameManager.js";
+import { getSelectedRound } from "./phase-rounds.js";
 
 /**
  * Check if we have received valid tguesses from opponents
@@ -14,7 +15,7 @@ function hasReceivedTGuesses() {
   if (!myTeam) return false;
 
   const otherTeam = myTeam === "A" ? "B" : "A";
-  const roundKey = `round_${gameManager.round}`;
+  const roundKey = `round_${getSelectedRound?.() || gameManager.round}`;
   const tguessKey = `${otherTeam}_about_${myTeam}`;
   const tguesses = gameManager.tguessesData[roundKey]?.[tguessKey];
 
@@ -30,7 +31,7 @@ function hasSentTConf() {
   if (!myTeam) return false;
 
   const otherTeam = myTeam === "A" ? "B" : "A";
-  const roundKey = `round_${gameManager.round}`;
+  const roundKey = `round_${getSelectedRound?.() || gameManager.round}`;
   const tconfKey = `${myTeam}_about_${otherTeam}`;
   const tconf = gameManager.tconfData[roundKey]?.[tconfKey];
 
@@ -45,7 +46,7 @@ function hasSentConf() {
   const myTeam = me?.team;
   if (!myTeam) return false;
 
-  const roundKey = `round_${gameManager.round}`;
+  const roundKey = `round_${getSelectedRound?.() || gameManager.round}`;
   const conf = gameManager.confData[roundKey]?.[myTeam];
 
   return conf && Array.isArray(conf) && conf.length > 0;
@@ -75,21 +76,112 @@ export function updateClueInputs() {
   const me = gameManager.players[gameManager.playerId];
   const myTeam = me?.team;
   const isActive = gameManager.isActivePlayer();
-  const teamPhase = gameManager.teamPhases?.[myTeam] || "lobby";
+  const selectedRound = getSelectedRound?.() || gameManager.round || 1;
+  const teamPhase = gameManager.getRoundPhase(myTeam, selectedRound);
+  const otherTeam = myTeam === "A" ? "B" : "A";
+  const roundKey = `round_${selectedRound}`;
+  const myTGuess =
+    gameManager.tguessesData?.[roundKey]?.[`${myTeam}_about_${otherTeam}`];
+  const hasMyTGuess = Array.isArray(myTGuess) && myTGuess.length > 0;
 
   const enables = {
     clues: isActive && teamPhase === "clues",
     guess: myTeam && !isActive && teamPhase === "guess_us",
-    conf: isActive && teamPhase === "conf_us",
+    // conf inputs are auto-filled with our code and kept read-only
+    conf: false,
     tguess: false, // tguess are always read-only
-    tconf: isActive && teamPhase === "conf_them",
+    tconf: false,
   };
 
   const usContainer = document.getElementById("view-us");
   if (usContainer) {
     toggleInputs(".clue-input", enables.clues, usContainer);
-    toggleInputs(".guess-input", enables.guess, usContainer);
-    toggleInputs(".conf-input", enables.conf, usContainer);
+    const roundKey = `round_${selectedRound}`;
+    const myCodes = gameManager.codes?.[myTeam]?.[roundKey] || "";
+    const codeDigits = myCodes
+      .toString()
+      .split("")
+      .map((d) => parseInt(d, 10))
+      .filter((n) => Number.isFinite(n));
+    const confAlreadySent = hasSentConf();
+
+    const guessInputs = usContainer.querySelectorAll(".guess-input");
+    const confInputs = usContainer.querySelectorAll(".conf-input");
+    const tguessInputs = usContainer.querySelectorAll(".tguess-input");
+
+    const setState = (nodes, { editable, bg }) => {
+      nodes.forEach((inp) => {
+        if (editable) {
+          inp.removeAttribute("readonly");
+          inp.removeAttribute("disabled");
+          inp.classList.remove("disabled-clue");
+        } else {
+          inp.setAttribute("readonly", "readonly");
+          inp.classList.add("disabled-clue");
+          inp.removeAttribute("disabled");
+        }
+        if (bg) inp.style.backgroundColor = bg;
+      });
+    };
+
+    // Defaults
+    setState(guessInputs, { editable: false, bg: "#eee" });
+    setState(confInputs, { editable: false, bg: "#eee" });
+    setState(tguessInputs, { editable: false, bg: "#eee" });
+
+    // Phase-specific rules
+    switch (teamPhase) {
+      case "clues": {
+        // Active: all gray, show code only to active; Others: all gray, code hidden
+        confInputs.forEach((inp, idx) => {
+          if (isActive && codeDigits[idx] !== undefined) {
+            inp.value = codeDigits[idx];
+          } else if (!confAlreadySent) {
+            inp.value = "";
+          }
+        });
+        break;
+      }
+      case "guess_us": {
+        if (!isActive) {
+          // Teammates: first column editable white
+          setState(guessInputs, { editable: true, bg: "#fff" });
+        }
+        // Code visible only to active; teammates see blank until conf sent
+        confInputs.forEach((inp, idx) => {
+          if ((isActive || confAlreadySent) && codeDigits[idx] !== undefined) {
+            inp.value = codeDigits[idx];
+          } else if (!confAlreadySent) {
+            inp.value = "";
+          }
+        });
+        break;
+      }
+      case "conf_us": {
+        // Active: numbers received + code visible, all gray; others: numbers visible, code hidden until sent
+        if (confAlreadySent || isActive) {
+          confInputs.forEach((inp, idx) => {
+            if (codeDigits[idx] !== undefined) inp.value = codeDigits[idx];
+          });
+        }
+        break;
+      }
+      case "guess_them": {
+        // All gray, non editable
+        break;
+      }
+      case "conf_them": {
+        // All gray; code shown only if already sent
+        if (confAlreadySent || isActive) {
+          confInputs.forEach((inp, idx) => {
+            if (codeDigits[idx] !== undefined) inp.value = codeDigits[idx];
+          });
+        }
+        break;
+      }
+      default:
+        break;
+    }
 
     // Ensure active player cannot edit guess inputs in guess_us phase
     if (teamPhase === "guess_us" && isActive) {
@@ -105,52 +197,11 @@ export function updateClueInputs() {
           inp.removeAttribute("disabled");
         });
       usContainer.querySelectorAll(".guess-input").forEach((inp) => {
-        inp.style.backgroundColor = "#eee";
+        // keep guess inputs styling
       });
     }
 
-    // Show tguess inputs for active player (read-only)
-    const shouldShowTGuess = isActive && teamPhase !== "lobby";
-    usContainer.querySelectorAll(".tguess-input").forEach((inp) => {
-      inp.style.display = shouldShowTGuess ? "block" : "none";
-      if (shouldShowTGuess) {
-        inp.setAttribute("readonly", "readonly");
-        inp.classList.add("disabled-clue");
-        inp.removeAttribute("disabled");
-        if (!hasReceivedTGuesses()) {
-          inp.value = "";
-        }
-      }
-    });
-
-    // Show tconf inputs for active player
-    // Enable when: active + (guess_them OR conf_them) + received tguesses
-    const shouldShowTConf = isActive && teamPhase !== "lobby";
-    const hasTGuesses = hasReceivedTGuesses();
-    const enableTConf =
-      isActive &&
-      (teamPhase === "guess_them" || teamPhase === "conf_them") &&
-      hasTGuesses;
-
-    usContainer.querySelectorAll(".tconf-input").forEach((inp) => {
-      inp.style.display = shouldShowTConf ? "block" : "none";
-
-      if (shouldShowTConf) {
-        if (enableTConf) {
-          // Writable when tguesses received in guess_them or conf_them
-          inp.removeAttribute("readonly");
-          inp.removeAttribute("disabled");
-          inp.classList.remove("disabled-clue");
-        } else {
-          // Read-only in other phases or when tguesses not yet received
-          inp.setAttribute("readonly", "readonly");
-          inp.classList.add("disabled-clue");
-          inp.removeAttribute("disabled");
-        }
-      }
-    });
-
-    // Enable/disable confirm buttons based on phase
+    const hasTGuesses = hasMyTGuess; // use our submitted tguesses for gating conf_them
     const btnSubmitConfUs = document.getElementById("btn-submit-conf-us");
     if (btnSubmitConfUs) {
       const show = teamPhase === "conf_us";
@@ -167,59 +218,59 @@ export function updateClueInputs() {
     const btnSubmitConfThem = document.getElementById("btn-submit-conf-them");
     if (btnSubmitConfThem) {
       const show = teamPhase === "conf_them";
-      btnSubmitConfThem.style.display = show ? "block" : "none";
+      btnSubmitConfThem.style.display = show ? "inline-block" : "none";
+      let tconfAlreadySent = false;
       if (show) {
-        const tconfAlreadySent = hasSentTConf();
-        const disabled = !isActive || !hasTGuesses || tconfAlreadySent;
+        tconfAlreadySent = hasSentTConf();
+        const disabled = !hasTGuesses || tconfAlreadySent;
         btnSubmitConfThem.disabled = disabled;
         btnSubmitConfThem.classList.toggle("disabled-clue", disabled);
       }
+
+      console.log("[INPUTS] btn-submit-conf-them", {
+        selectedRound,
+        teamPhase,
+        show,
+        isActive,
+        hasTGuesses,
+        tconfAlreadySent,
+        disabled: btnSubmitConfThem.disabled,
+        classList: [...btnSubmitConfThem.classList],
+        display: btnSubmitConfThem.style.display,
+      });
     }
   }
 
   const themContainer = document.getElementById("view-them");
   if (themContainer) {
-    const otherTeam = myTeam === "A" ? "B" : "A";
-    const otherTeamPhase = gameManager.teamPhases?.[otherTeam] || "lobby";
-
-    // guessthem inputs: writable only in guess_them when active
-    // COLLABORATIVO: tutti i membri della squadra possono scrivere in guess_them
+    // Allow writing guesses when this round is in guess_them OR in conf_them but we haven't submitted our guess yet
     const isInGuessThem = teamPhase === "guess_them";
-    const isInConfThem = teamPhase === "conf_them" && isActive;
+    const isInConfThem = teamPhase === "conf_them";
+    const allowGuessInputs = isInGuessThem || (isInConfThem && !hasMyTGuess); // allow backfill in conf_them if not sent
 
     const guessThem = themContainer.querySelectorAll(".guessthem-input");
     guessThem.forEach((inp) => {
-      if (isInGuessThem) {
-        // Writable in guess_them per TUTTA LA SQUADRA (collaborativo)
+      if (allowGuessInputs) {
         inp.removeAttribute("disabled");
         inp.removeAttribute("readonly");
         inp.classList.remove("disabled-clue");
-      } else if (isInConfThem) {
-        // Readonly in conf_them (keep values visible)
+        inp.style.backgroundColor = "#fff";
+      } else {
         inp.setAttribute("readonly", "readonly");
         inp.classList.add("disabled-clue");
         inp.removeAttribute("disabled");
-      } else {
-        // Hidden/disabled in other fasi
-        inp.disabled = true;
-        inp.classList.add("disabled-clue");
+        inp.style.backgroundColor = "#eee";
       }
     });
 
     // confthem inputs: writable ONLY when active in conf_them
     const confThem = themContainer.querySelectorAll(".confthem-input");
     confThem.forEach((inp) => {
-      if (isInConfThem && isActive) {
-        // Writable ONLY when ACTIVE in conf_them
-        inp.removeAttribute("readonly");
-        inp.removeAttribute("disabled");
-        inp.classList.remove("disabled-clue");
-      } else {
-        // Readonly in other cases
-        inp.setAttribute("readonly", "readonly");
-        inp.classList.add("disabled-clue");
-        inp.removeAttribute("disabled");
-      }
+      // Always readonly; show gray background
+      inp.setAttribute("readonly", "readonly");
+      inp.classList.add("disabled-clue");
+      inp.removeAttribute("disabled");
+      inp.style.backgroundColor = "#eee";
     });
   }
 

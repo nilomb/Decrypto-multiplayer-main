@@ -432,7 +432,9 @@ body.them .us-layout .top-box {
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.3s, color 0.3s;
+  transition:
+    background 0.3s,
+    color 0.3s;
 }
 
 .us-layout .round-switch button.active {
@@ -484,7 +486,9 @@ body.them .us-layout .top-box {
   cursor: pointer;
   font-size: 14px;
   background: #ccc;
-  transition: background 0.3s, color 0.3s;
+  transition:
+    background 0.3s,
+    color 0.3s;
 }
 
 .us-layout .mode-nav button.active {
@@ -643,6 +647,7 @@ body.them .us-layout .top-box {
 .us-layout .panel {
   background: transparent;
   border-color: rgba(204, 204, 204, 0.5);
+  position: relative; /* anchor overlayed panel-top */
 }
 
 .us-layout .panel-top,
@@ -652,6 +657,18 @@ body.them .us-layout .top-box {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   min-height: 0;
+  background: transparent;
+}
+
+/* Let panel-top float over the center (US only) so text flows over the big number */
+.us-layout .panel-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 30px; /* leave room for panel-bottom */
+  z-index: 2;
+  pointer-events: auto;
 }
 
 .us-layout .panel-top ul,
@@ -664,7 +681,7 @@ body.them .us-layout .top-box {
 .us-layout .panel-top li,
 .panel-top li {
   padding: 2px 0;
-  border-bottom: 1px solid #eee;
+  /* border-bottom: 1px solid #eee; */
   font-size: 14px;
   line-height: 1.2;
 }
@@ -676,6 +693,8 @@ body.them .us-layout .top-box {
   align-items: center;
   justify-content: center;
   background: #f8f8f8;
+  position: relative;
+  z-index: 1; /* keep number visible under overlay text */
 }
 
 /* US layout panel center should be transparent */
@@ -689,6 +708,8 @@ body.them .us-layout .top-box {
   font-weight: 700;
   color: #666;
   user-select: none;
+  position: relative;
+  z-index: 1;
 }
 
 /* US layout panel numbers should be more visible on transparent background */
@@ -714,7 +735,7 @@ body.them .us-layout .top-box {
 
 /* US layout panel bottom should be transparent */
 .us-layout .panel-bottom {
-  background: transparent;
+  /* background: transparent; */
   border-top-color: rgba(221, 221, 221, 0.5);
 }
 
@@ -836,7 +857,7 @@ body.them .us-layout .top-box {
   color: #222;
   font-size: 11px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 2;
   max-width: 160px;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -853,6 +874,7 @@ body.them .us-layout .top-box {
 
 .player-name-pill.is-active {
   text-decoration: underline;
+  text-underline-offset: 2px;
   background: transparent !important;
   padding: 0;
   border-radius: 0;
@@ -868,6 +890,7 @@ body.them .us-layout .top-box {
   color: #555;
   flex: 1;
   min-width: 140px;
+  line-height: 2;
 }
 
 .round-indicator {
@@ -1213,6 +1236,12 @@ body.them .us-layout .top-box {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.conf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-bar button {

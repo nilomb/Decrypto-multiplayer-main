@@ -347,17 +347,14 @@ export function updateConfDisplay(round) {
   const confInputs = usContainer.querySelectorAll(".conf-input");
 
   if (!conf) {
-    // Clear all conf inputs when no data exists
+    // Keep prefilled code values; ensure read-only state
     confInputs.forEach((input) => {
-      input.value = "";
-      input.disabled = false;
+      input.setAttribute("readonly", "readonly");
       input.classList.remove("disabled-clue");
+      input.removeAttribute("disabled");
     });
-
-    // Re-enable submit button
     const btnSubmitConfUs = document.getElementById("btn-submit-conf-us");
     if (btnSubmitConfUs) btnSubmitConfUs.disabled = false;
-
     // Don't return - still need to populate panels with previous rounds
   } else {
     if (Array.isArray(conf)) {
@@ -413,9 +410,9 @@ export function updateConfDisplay(round) {
       const roundConfArray = Array.isArray(roundConfData)
         ? roundConfData
         : typeof roundConfData === "object" &&
-          Object.keys(roundConfData).length > 0
-        ? roundConfData[Object.keys(roundConfData)[0]]
-        : null;
+            Object.keys(roundConfData).length > 0
+          ? roundConfData[Object.keys(roundConfData)[0]]
+          : null;
 
       if (!roundConfArray) continue;
 
@@ -464,6 +461,13 @@ export function updateTGuessesDisplay(round) {
     return;
   }
 
+  console.log("[TGUESS][DISPLAY]", {
+    round: displayRound,
+    myTeam,
+    from: otherTeam,
+    tguesses,
+  });
+
   tguesses.forEach((val, idx) => {
     if (tguessInputs[idx]) {
       tguessInputs[idx].value = val;
@@ -478,41 +482,8 @@ export function updateTGuessesDisplay(round) {
  * The tconf-input fields in US view show the user's own guesses about the opponent's code
  * @param {number} [round] - Optional round number to display. If not provided, uses selected round from UI
  */
-export function updateTConfDisplay(round) {
-  const me = gameManager.players[gameManager.playerId];
-  const myTeam = me?.team;
-  if (!myTeam) return;
-
-  // Check if tconfData exists
-  if (!gameManager.tconfData) return;
-
-  const displayRound = round !== undefined ? round : getSelectedRound();
-  const roundKey = `round_${displayRound}`;
-  const otherTeam = myTeam === "A" ? "B" : "A";
-  const tconfKey = `${myTeam}_about_${otherTeam}`;
-  const tconfData = gameManager.tconfData[roundKey]?.[tconfKey];
-
-  const usContainer = document.getElementById("view-us");
-  if (!usContainer) return;
-
-  const tconfInputs = usContainer.querySelectorAll(".tconf-input");
-
-  if (!tconfData || !Array.isArray(tconfData)) {
-    // Clear all tconf inputs when no data exists
-    tconfInputs.forEach((input) => {
-      input.value = "";
-    });
-    const btnSubmitConfThem = document.getElementById("btn-submit-conf-them");
-    if (btnSubmitConfThem) btnSubmitConfThem.disabled = false;
-    return;
-  }
-
-  tconfData.forEach((val, idx) => {
-    if (tconfInputs[idx]) {
-      tconfInputs[idx].value = val;
-    }
-  });
-
+export function updateTConfDisplay() {
+  // tconf inputs removed from US view; kept for API compatibility
   const btnSubmitConfThem = document.getElementById("btn-submit-conf-them");
-  if (btnSubmitConfThem) btnSubmitConfThem.disabled = true;
+  if (btnSubmitConfThem) btnSubmitConfThem.disabled = false;
 }

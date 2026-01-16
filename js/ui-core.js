@@ -165,10 +165,21 @@ function updateActionBar() {
   const myTeam = me?.team;
   if (!myTeam) return;
 
-  const teamPhase = gameManager.teamPhases?.[myTeam] || "lobby";
+  const selectedRound = getSelectedRound?.() || gameManager.round || 1;
+  const teamPhase = gameManager.getRoundPhase(myTeam, selectedRound);
   const isActive = gameManager.isActivePlayer();
-  const activeId = gameManager.getActivePlayer(myTeam, gameManager.round);
+  const activeId = gameManager.getActivePlayer(myTeam, selectedRound);
   const activeName = activeId ? gameManager.players[activeId]?.name : "Someone";
+  const otherTeam = myTeam === "A" ? "B" : "A";
+  const roundKey = `round_${selectedRound}`;
+
+  const myTGuesses =
+    gameManager.tguessesData?.[roundKey]?.[`${myTeam}_about_${otherTeam}`];
+  const hasMyTGuesses = Array.isArray(myTGuesses) && myTGuesses.length > 0;
+  const allowSubmitGuessThem =
+    (teamPhase === "guess_them" ||
+      (teamPhase === "conf_them" && !hasMyTGuesses)) &&
+    !hasMyTGuesses;
 
   // Hide chat button if player is active (can't participate in team chat)
   updateChatButtonVisibility(!isActive);
@@ -232,11 +243,11 @@ function updateActionBar() {
       them: isActive
         ? `Guess Team ${myTeam === "A" ? "B" : "A"}'s words`
         : "Teammates are guessing opponents clues",
-      buttons: isActive ? [elements.btnSubmitTGuess] : [],
+      buttons: allowSubmitGuessThem ? [elements.btnSubmitTGuess] : [],
     },
     conf_them: {
-      us: "Send to the opponent the right code",
-      them: "Send to the opponent the right code",
+      us: "Send your guesses to the opponent",
+      them: "Send your guesses to the opponent",
       buttons: [elements.btnSubmitConfThem],
     },
     review_round: {
@@ -246,7 +257,10 @@ function updateActionBar() {
     },
   };
 
-  const phase = actions[teamPhase] || {
+  const effectivePhase =
+    teamPhase === "conf_them" && !hasMyTGuesses ? "guess_them" : teamPhase;
+
+  const phase = actions[effectivePhase] || {
     us: "Waiting...",
     them: "Waiting...",
     buttons: [],
@@ -265,15 +279,20 @@ function updateActionBar() {
   }
   phase.buttons.forEach((btn) => showButton(btn));
 
+  // Debug visibility for conf_them button
+  if (elements.btnSubmitConfThem) {
+    console.log("[UI] conf_them button state", {
+      selectedRound,
+      teamPhase,
+      display: elements.btnSubmitConfThem.style.display,
+      disabled: elements.btnSubmitConfThem.disabled,
+      classList: [...elements.btnSubmitConfThem.classList],
+    });
+  }
+
   // Keep conf buttons visibility in sync even if previous phases hid them
-  const roundKey = `round_${gameManager.round || 1}`;
-  const otherTeam = myTeam === "A" ? "B" : "A";
-  const hasTGuesses = Array.isArray(
-    gameManager.tguessesData?.[roundKey]?.[`${otherTeam}_about_${myTeam}`]
-  )
-    ? gameManager.tguessesData[roundKey][`${otherTeam}_about_${myTeam}`]
-        .length > 0
-    : false;
+  // Use our submitted tguesses (myTeam_about_otherTeam) when gating conf_them
+  const hasTGuesses = Array.isArray(myTGuesses) ? myTGuesses.length > 0 : false;
 
   if (elements.btnSubmitConfUs) {
     const conf = gameManager.confData?.[roundKey]?.[myTeam];
@@ -296,7 +315,7 @@ function updateActionBar() {
     elements.btnSubmitConfThem.style.display = showConfThem ? "block" : "none";
     elements.btnSubmitConfThem.classList.remove("hidden");
     if (showConfThem) {
-      const disabled = tconfSent || !hasTGuesses || !isActive;
+      const disabled = tconfSent || !hasTGuesses;
       elements.btnSubmitConfThem.disabled = disabled;
       elements.btnSubmitConfThem.classList.toggle("disabled-clue", disabled);
     }

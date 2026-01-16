@@ -18,16 +18,37 @@ export function initGuessThemPhase(showToast) {
 
     const me = gameManager.players[gameManager.playerId];
     const myTeam = me?.team;
-    const currentPhase = gameManager.teamPhases?.[myTeam];
+    const selectedRound = getSelectedRound();
+    const currentPhase = gameManager.getRoundPhase(myTeam, selectedRound);
 
-    if (!myTeam || currentPhase !== "guess_them") {
+    if (
+      !myTeam ||
+      (currentPhase !== "guess_them" && currentPhase !== "conf_them")
+    ) {
       btnSubmitTGuess.disabled = false;
       return;
     }
 
     // Check if user is active player
     const isActive = gameManager.isActivePlayer();
-    if (!isActive) {
+    const otherTeam = myTeam === "A" ? "B" : "A";
+    const roundKey = `round_${selectedRound}`;
+    const existingTGuess =
+      gameManager.tguessesData?.[roundKey]?.[`${myTeam}_about_${otherTeam}`];
+    const hasExistingTGuess =
+      Array.isArray(existingTGuess) && existingTGuess.length > 0;
+
+    if (hasExistingTGuess) {
+      alert("A guess for this round has already been submitted.");
+      btnSubmitTGuess.disabled = false;
+      return;
+    }
+
+    // Allow non-active teammates to backfill guesses on past rounds if nothing was submitted yet
+    const canSubmit =
+      currentPhase === "guess_them" ||
+      (currentPhase === "conf_them" && !hasExistingTGuess);
+    if (!canSubmit) {
       alert("Only the active player can submit the final guess.");
       btnSubmitTGuess.disabled = false;
       return;
@@ -58,10 +79,17 @@ export function initGuessThemPhase(showToast) {
     }
 
     // Save tguesses to Firebase
-    if (!gameManager.saveTGuess(tguesses, getSelectedRound())) {
+    if (!gameManager.saveTGuess(tguesses, selectedRound)) {
       btnSubmitTGuess.disabled = false;
       return;
     }
+
+    console.log("[TGUESS][SAVE]", {
+      round: selectedRound,
+      team: myTeam,
+      about: otherTeam,
+      tguesses,
+    });
 
     // Advance to conf_them phase
     if (currentPhase !== "conf_them") {
@@ -78,7 +106,6 @@ export function initGuessThemPhase(showToast) {
     });
 
     // In single-player mode, advance to conf_them immediately
-    const otherTeam = myTeam === "A" ? "B" : "A";
     const otherTeamMembers = gameManager.teams[otherTeam] || [];
 
     if (otherTeamMembers.length === 0) {

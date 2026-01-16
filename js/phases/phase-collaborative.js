@@ -132,7 +132,8 @@ export function updateCollaborativeTGuesses() {
   const roundKey = `round_${gameManager.round}`;
   const currentPhase = gameManager.teamPhases?.[myTeam];
 
-  if (currentPhase === "guess_them") {
+  // Keep teammates in sync while typing guesses about them.
+  if (currentPhase === "guess_them" || currentPhase === "conf_them") {
     // Only update live for "them" page (intra-team collaboration)
     if (!document.getElementById("guessthem1")) {
       return;

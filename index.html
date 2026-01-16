@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,11 +6,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
-      name="mobile-web-app-capable-status-bar-style"
+      name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    <meta name="apple-mobile-web-app-title" content="Decrypto Multiplayer" />
     <title>Decrypto Multiplayer</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
@@ -162,5 +163,23 @@
 
     <!-- Lightweight bootstrap for touch/copy helpers -->
     <script type="module" src="js/bootstrap.js"></script>
+
+    <script>
+      (() => {
+        const lockPortrait = () => {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock("portrait").catch(() => {});
+          }
+        };
+
+        window.addEventListener("load", lockPortrait);
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) {
+            lockPortrait();
+          }
+        });
+        window.addEventListener("orientationchange", lockPortrait);
+      })();
+    </script>
   </body>
 </html>

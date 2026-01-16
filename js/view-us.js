@@ -32,21 +32,18 @@ if (usContainer) {
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess1" placeholder="" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf1" placeholder="" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess1" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number tconf-input active-only" id="tconf1" placeholder="" />
                 </div>
                 <div class="row" id="clue2" data-clue-row="2">
                   <input type="text" placeholder="" id="clueword2" class="clue-input" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess2" placeholder="" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf2" placeholder="" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess2" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number tconf-input active-only" id="tconf2" placeholder="" />
                 </div>
                 <div class="row" id="clue3" data-clue-row="3">
                   <input type="text" placeholder="" id="clueword3" class="clue-input" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess3" placeholder="" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf3" placeholder="" />
                   <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess3" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number tconf-input active-only" id="tconf3" placeholder="" />
                 </div>
               </div>
             </div>
@@ -57,8 +54,8 @@ if (usContainer) {
             <div class="action-buttons">
               <button id="btn-submit-clues" style="display: inline;">Send</button>
               <button id="btn-submit-guess" style="display: none;">Send Guess</button>
-              <button id="btn-submit-conf-us" class="conf-btn" style="display:none;">Conferma squadra</button>
-              <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Conferma avversari</button>
+              <button id="btn-submit-conf-us" class="conf-btn" style="display:none;">Team Confirm</button>
+              <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Send</button>
             </div>
           </div>
           <!-- US Panels (layout placeholder - content removed) -->

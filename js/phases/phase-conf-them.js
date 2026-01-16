@@ -25,52 +25,35 @@ export function initConfThemPhase(showToast, updateClueInputs) {
       return;
     }
 
-    // Check if user is active player
-    const isActive = gameManager.isActivePlayer();
-    if (!isActive) {
-      alert("Only the active player can submit tconf.");
-      return;
-    }
+    const round = getSelectedRound();
+    const roundKey = `round_${round}`;
+    const otherTeam = myTeam === "A" ? "B" : "A";
+    const codeStr = gameManager.codes?.[myTeam]?.[roundKey] || "";
+    const tconfs = codeStr
+      .toString()
+      .split("")
+      .map((d) => parseInt(d, 10))
+      .filter((n) => Number.isFinite(n));
 
-    // Collect tconf from US page
-    const tconf1 = document.getElementById("tconf1")?.value;
-    const tconf2 = document.getElementById("tconf2")?.value;
-    const tconf3 = document.getElementById("tconf3")?.value;
-
-    if (!tconf1 || !tconf2 || !tconf3) {
-      alert("Inserisci tutti i tconf.");
-      return;
-    }
-
-    const tconfs = [parseInt(tconf1), parseInt(tconf2), parseInt(tconf3)];
-
-    // Validate tconfs (1-4, no duplicates)
-    if (tconfs.some((c) => c < 1 || c > 4)) {
-      alert("Tconf devono essere 1-4.");
-      return;
-    }
-
-    if (tconfs.some((num, idx) => tconfs.indexOf(num) !== idx)) {
-      alert("Tconf must have unique numbers.");
+    if (tconfs.length < 3) {
+      alert("Codice non disponibile per questo round.");
       return;
     }
 
     // Save tconf to Firebase
-    if (!gameManager.saveTConf(tconfs, getSelectedRound())) {
+    if (!gameManager.saveTConf(tconfs, round)) {
       return;
     }
 
+    console.log("[TCONF][SEND]", {
+      round,
+      team: myTeam,
+      about: otherTeam,
+      code: tconfs,
+    });
+
     showToast("TConf inviati.");
     setTimeout(() => updateClueInputs(), 100);
-
-    // Disable inputs after submission
-    ["tconf1", "tconf2", "tconf3"].forEach((id) => {
-      const inp = document.getElementById(id);
-      if (inp) {
-        inp.disabled = true;
-        inp.classList.add("disabled-clue");
-      }
-    });
 
     btnSubmitConf.disabled = true;
   });

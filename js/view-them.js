@@ -50,7 +50,10 @@ if (themMount) {
           <!-- Action Bar -->
           <div class="action-bar" id="action-bar-them">
             <span id="action-text-them">Waiting for opponents clues</span>
-            <button id="btn-submit-tguess" style="display: none;">Send Guess</button>
+            <div class="action-buttons">
+              <button id="btn-submit-tguess" style="display: none;">Send Guess</button>
+              <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Send</button>
+            </div>
           </div>
           <div class="grid" id="them-panels">
             <div class="panel" data-panel="1">
