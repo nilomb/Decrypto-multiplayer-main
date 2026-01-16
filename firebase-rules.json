@@ -1,0 +1,55 @@
+{
+    "rules": {
+        "rooms": {
+            "$roomId": {
+                ".read": true,
+                ".write": "auth != null",
+                "createdAt": {
+                    ".validate": "newData.isNumber()"
+                },
+                "creatorId": {
+                    ".validate": "newData.isString()"
+                },
+                "players": {
+                    "$playerId": {
+                        ".validate": "newData.hasChild('name')"
+                    }
+                },
+                "teams": {
+                    "A": {},
+                    "B": {}
+                },
+                "words": {
+                    "A": {},
+                    "B": {}
+                },
+                "codes": {
+                    "A": {
+                        ".validate": "newData.hasChildren()"
+                    },
+                    "B": {
+                        ".validate": "newData.hasChildren()"
+                    }
+                },
+                "clues": {},
+                "guesses": {},
+                "tguesses": {},
+                "conf": {},
+                "tconf": {},
+                "hints": {},
+                "state": {},
+                "logs": {
+                    ".read": true
+                },
+                "chat": {
+                    ".read": true
+                },
+                "typing": {
+                    ".read": true
+                },
+                "collabTGuesses": {},
+                "collabGuessUs": {}
+            }
+        }
+    }
+}

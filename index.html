@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="mobile-web-app-capable-status-bar-style"
+      content="black-translucent"
+    />
+    <title>Decrypto Multiplayer</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+    <!-- Favicon / App Icons -->
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="192x192"
+      href="assets/imgs/icon-192.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="assets/imgs/icon-512.png"
+    />
+    <link rel="apple-touch-icon" href="assets/imgs/icon-512.png" />
+    <link rel="manifest" href="manifest.json" />
+
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  </head>
+  <body>
+    <!-- LOBBY VIEW -->
+    <section id="view-lobby" class="view">
+      <div class="big-title">Decrypto ScoreSheet</div>
+      <div class="tagline">
+        Realtime multiplayer word deduction • 8 rounds • 2 teams
+      </div>
+      <div class="stack">
+        <input
+          id="lobby-player-name"
+          class="input"
+          type="text"
+          maxlength="20"
+          placeholder="Your Name"
+          data-autofocus
+        />
+        <select id="sel-language" aria-label="Language">
+          <option value="en">English</option>
+          <option value="it">Italiano</option>
+        </select>
+        <button id="btn-enter-createjoin" class="btn">Play</button>
+      </div>
+      <div class="note">
+        Prototype scaffolding SPA – nessun backend richiesto per provare le
+        schermate.
+      </div>
+    </section>
+
+    <!-- CREATE / JOIN VIEW -->
+    <section id="view-createjoin" class="view hidden">
+      <h1>Multiplayer</h1>
+      <div class="stack">
+        <div class="player-name-display">
+          Player: <span id="player-name-label">----</span>
+        </div>
+        <button id="btn-create-room" class="btn">+ Create Room</button>
+        <button id="btn-go-join" class="btn secondary">Join Room</button>
+      </div>
+      <div class="note">Create a new room or join an existing one.</div>
+      <button data-exit class="btn danger footer-btn">Exit</button>
+    </section>
+
+    <!-- JOIN ROOM VIEW -->
+    <section id="view-join" class="view hidden">
+      <h1>Join Room</h1>
+      <div id="join-player-label" class="note"></div>
+      <div class="stack">
+        <input
+          id="join-code"
+          class="input code-input"
+          type="text"
+          maxlength="4"
+          placeholder="ABCD"
+          data-autofocus
+        />
+        <button id="btn-join-room" class="btn">Join Room</button>
+      </div>
+      <div class="note">Enter the room code to join.</div>
+      <button data-exit class="btn danger footer-btn">Exit</button>
+    </section>
+
+    <!-- ROOM LOBBY VIEW -->
+    <section id="view-room" class="view hidden">
+      <h1>Room Lobby</h1>
+      <div class="room-header">
+        Room:
+        <span id="room-id-label" class="room-id-label">----</span>
+        <img
+          id="room-id-copy-icon"
+          class="room-id-copy-icon"
+          src="assets/imgs/id.png"
+          alt="Copy Room ID"
+          title="Copia Room ID"
+        />
+        <span id="room-id-copied" class="room-id-feedback">Copiato!</span>
+      </div>
+      <div class="teams">
+        <div class="team">
+          <h2>Team A</h2>
+          <ul id="team-a-list"></ul>
+          <button id="btn-join-a" class="btn secondary mt-10">Join A</button>
+        </div>
+        <div class="team">
+          <h2>Team B</h2>
+          <ul id="team-b-list"></ul>
+          <button id="btn-join-b" class="btn secondary mt-10">Join B</button>
+        </div>
+        <div id="unassigned-box" class="team hidden">
+          <h2>In attesa</h2>
+          <ul id="unassigned-list"></ul>
+        </div>
+      </div>
+      <div class="stack">
+        <button id="btn-start-game" class="btn" disabled>START GAME</button>
+      </div>
+      <div class="note">Waiting for players... (2+ to start)</div>
+      <button data-exit class="btn danger footer-btn">Exit</button>
+    </section>
+
+    <!-- US PAGE VIEW (estratta e montata via JS) -->
+    <section id="view-us" class="view hidden us-layout" data-us-mount></section>
+
+    <!-- THEM PAGE VIEW (estratta e montata via JS) -->
+    <section
+      id="view-them"
+      class="view hidden us-layout"
+      data-them-mount
+    ></section>
+
+    <!-- Core dependencies -->
+    <script type="module" src="js/firebase-init.js"></script>
+    <script type="module" src="js/constants.js"></script>
+    <script type="module" src="js/GameManager.js"></script>
+    <script type="module" src="js/TeamChat.js"></script>
+
+    <!-- View templates -->
+    <script type="module" src="js/view-us.js"></script>
+    <script type="module" src="js/view-them.js"></script>
+
+    <!-- Main UI coordinator (imports all phase modules internally) -->
+    <script type="module" src="js/ui-core.js"></script>
+
+    <!-- Lightweight bootstrap for touch/copy helpers -->
+    <script type="module" src="js/bootstrap.js"></script>
+  </body>
+</html>
