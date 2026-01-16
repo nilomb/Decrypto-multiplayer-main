@@ -723,7 +723,7 @@ body.them .us-layout .top-box {
   border-top: 1px solid #ddd;
   padding: 4px;
   background: #fafafa;
-  max-height: 80px;
+  max-height: 112px;
   overflow-y: auto;
   text-align: center;
   font-weight: 500;
@@ -731,6 +731,7 @@ body.them .us-layout .top-box {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  z-index: 2;
 }
 
 /* US layout panel bottom should be transparent */
