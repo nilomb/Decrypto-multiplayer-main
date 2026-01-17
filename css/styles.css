@@ -116,6 +116,52 @@ h1 {
   line-height: 1.4;
 }
 
+/* Language picker */
+.lang-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+
+.flag-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.flag-btn {
+  font-size: 32px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.flag-btn:hover {
+  border-color: #bbb;
+  transform: translateY(-1px);
+}
+
+.flag-btn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.07);
+}
+
+.btn-play {
+  width: 150px;
+  height: 70px;
+  border-radius: 18px;
+  font-size: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-top: 4px;
+}
+
 /* Layout components */
 .stack {
   display: flex;
@@ -282,6 +328,20 @@ select {
   text-decoration: underline;
 }
 
+.team ul li .mini-kick,
+.unassigned ul li .mini-kick {
+  font-size: 11px;
+  margin-left: 6px;
+  cursor: pointer;
+  color: #b40000;
+  user-select: none;
+}
+
+.team ul li .mini-kick:hover,
+.unassigned ul li .mini-kick:hover {
+  text-decoration: underline;
+}
+
 .room-header {
   text-align: center;
   font-size: 14px;
@@ -320,6 +380,21 @@ select {
 
 .room-id-feedback.is-visible {
   display: inline;
+}
+
+.invite-link-copy {
+  text-align: center;
+  font-size: 13px;
+  color: #0d5adb;
+  cursor: pointer;
+  margin-top: -12px;
+  margin-bottom: 18px;
+  user-select: none;
+}
+
+.invite-link-copy:hover,
+.invite-link-copy:focus-visible {
+  text-decoration: underline;
 }
 
 /* Bottom navigation */
@@ -887,6 +962,11 @@ body.them .us-layout .top-box {
   font-weight: 700;
 }
 
+.mate-name.active {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .team-mates {
   font-size: 11px;
   color: #555;
@@ -1235,6 +1315,45 @@ body.them .us-layout .top-box {
   background: #007bff;
   color: #fff;
   border: 1px solid #0068d6;
+}
+
+/* Compact layout for short screens: keep bottom bar visible and shrink panels */
+@media (max-height: 720px) {
+  .view.us-layout {
+    overflow-y: auto;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+
+  nav.bottom-bar {
+    height: 60px;
+  }
+
+  .us-layout .bottom-bar.alt-bottom-bar {
+    height: 56px;
+  }
+
+  .us-layout .grid,
+  .grid {
+    gap: 4px;
+    padding: 6px;
+    height: auto;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .us-layout .panel-top {
+    bottom: 24px;
+  }
+
+  .us-layout .panel-bottom,
+  .panel-bottom {
+    max-height: 64px;
+  }
+
+  .us-layout .panel-number,
+  .panel-number {
+    font-size: 40px;
+  }
 }
 
 /* Unread Messages Badge */

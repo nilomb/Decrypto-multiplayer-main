@@ -5,25 +5,110 @@
 
 import { gameManager } from "../GameManager.js";
 
-// Word list cache
+// Word list cache keyed by language code ("ita" | "eng")
+const WORD_LIST_CACHE = {};
 let WORD_LIST = null;
+let CURRENT_LANG = null;
+
+function parseWordText(txt) {
+  return txt
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(
+      (l) =>
+        l.length > 0 &&
+        !l.startsWith("#") &&
+        !/^<!?doctype/i.test(l) &&
+        !/^<html/i.test(l) &&
+        !l.includes("<")
+    );
+}
+
+async function fetchWordlist(path) {
+  const attempts = [];
+
+  const tryFetch = async (urlLike) => {
+    const res = await fetch(urlLike, {
+      cache: "no-cache",
+      mode: "same-origin",
+    });
+    if (!res.ok)
+      throw new Error(
+        `wordlist fetch failed (${res.status} ${res.statusText}): ${urlLike}`
+      );
+    const txt = await res.text();
+    const parsed = parseWordText(txt);
+    if (!parsed.length)
+      throw new Error(`wordlist empty or invalid: ${urlLike}`);
+    return parsed;
+  };
+
+  // Try relative path first
+  try {
+    return await tryFetch(path);
+  } catch (e) {
+    attempts.push(e.message);
+  }
+
+  // Then try absolute URL from origin
+  try {
+    const url = new URL(path, window.location.origin).toString();
+    return await tryFetch(url);
+  } catch (e2) {
+    attempts.push(e2.message);
+  }
+
+  throw new Error(attempts.join(" | "));
+}
 
 /**
  * Load word list from wordlist.txt file
  */
-export async function loadWordList() {
-  if (WORD_LIST) return WORD_LIST;
+export async function loadWordList(lang) {
+  const selectedLang = (
+    lang ||
+    gameManager.roomLanguage ||
+    gameManager.language ||
+    "ita"
+  ).toLowerCase();
+  const langKey = selectedLang.startsWith("en") ? "eng" : "ita";
+  if (WORD_LIST_CACHE[langKey]) {
+    WORD_LIST = WORD_LIST_CACHE[langKey];
+    CURRENT_LANG = langKey;
+    return WORD_LIST;
+  }
 
   try {
-    const res = await fetch("wordlist.txt");
-    const txt = await res.text();
-    WORD_LIST = txt
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0 && !l.startsWith("#"));
+    const filename =
+      langKey === "eng" ? "wordlist-eng.txt" : "wordlist-ita.txt";
+    WORD_LIST = await fetchWordlist(filename);
+    WORD_LIST_CACHE[langKey] = WORD_LIST;
+    CURRENT_LANG = langKey;
   } catch (e) {
     console.warn("Failed to load wordlist", e);
-    WORD_LIST = [];
+    // If English was requested, do not fallback: bubble up so caller can handle (e.g., return to lobby)
+    if (langKey === "eng") {
+      throw e;
+    }
+    // Try fallback to opposite language, then legacy default
+    try {
+      const fallbackFile =
+        langKey === "eng" ? "wordlist-ita.txt" : "wordlist-eng.txt";
+      WORD_LIST = await fetchWordlist(fallbackFile);
+      WORD_LIST_CACHE[langKey] = WORD_LIST;
+      CURRENT_LANG = langKey;
+    } catch (err) {
+      console.warn("Fallback wordlist failed, trying legacy", err);
+      try {
+        WORD_LIST = await fetchWordlist("wordlist.txt");
+        WORD_LIST_CACHE[langKey] = WORD_LIST;
+        CURRENT_LANG = langKey;
+      } catch (legacyErr) {
+        console.warn("Legacy wordlist fallback failed", legacyErr);
+        WORD_LIST = [];
+        throw legacyErr;
+      }
+    }
   }
 
   return WORD_LIST;
@@ -103,19 +188,17 @@ export function updateTeamTopBar(round) {
   const pillThem = document.getElementById("player-name-pill-them");
   const matesSpan = document.getElementById("team-mates");
 
+  const activeId = me?.team ? gameManager.activePlayers?.[me.team] : null;
+  const activePlayer = activeId ? gameManager.players[activeId] : null;
+  const isActiveSelf = activeId && activeId === gameManager.playerId;
+  const isHostSelf = gameManager.creatorId === gameManager.playerId;
+  const selfName = me?.name ? (isHostSelf ? `(${me.name})` : me.name) : "";
+
   // Update player name pill (US page)
   if (pill) {
-    if (me) {
-      const isHost = gameManager.creatorId === gameManager.playerId;
-      const isActive =
-        me.team &&
-        gameManager.activePlayers?.[me.team] === gameManager.playerId;
-      pill.textContent = isHost ? `(${me.name})` : me.name;
-      pill.classList.toggle("is-active", !!isActive);
-      pill.classList.toggle("is-host", !!isHost);
-    } else {
-      pill.textContent = "";
-    }
+    pill.textContent = selfName;
+    pill.classList.toggle("is-active", !!isActiveSelf);
+    pill.classList.toggle("is-host", !!isHostSelf);
 
     pill.classList.remove("team-a", "team-b");
     if (me && me.team) {
@@ -125,17 +208,9 @@ export function updateTeamTopBar(round) {
 
   // Update player name pill (THEM page - identical to US)
   if (pillThem) {
-    if (me) {
-      const isHost = gameManager.creatorId === gameManager.playerId;
-      const isActive =
-        me.team &&
-        gameManager.activePlayers?.[me.team] === gameManager.playerId;
-      pillThem.textContent = isHost ? `(${me.name})` : me.name;
-      pillThem.classList.toggle("is-active", !!isActive);
-      pillThem.classList.toggle("is-host", !!isHost);
-    } else {
-      pillThem.textContent = "";
-    }
+    pillThem.textContent = selfName;
+    pillThem.classList.toggle("is-active", !!isActiveSelf);
+    pillThem.classList.toggle("is-host", !!isHostSelf);
 
     pillThem.classList.remove("team-a", "team-b");
     if (me && me.team) {
@@ -158,10 +233,15 @@ export function updateTeamTopBar(round) {
 
       const mates = ids
         .filter((id) => id !== gameManager.playerId)
-        .map((id) => gameManager.players[id]?.name)
+        .map((id) => {
+          const name = gameManager.players[id]?.name;
+          if (!name) return null;
+          const isActiveMate = activeId && id === activeId;
+          return `<span class="mate-name${isActiveMate ? " active" : ""}">${name}</span>`;
+        })
         .filter(Boolean);
 
-      matesSpan.textContent = mates.length ? mates.join(", ") : "—";
+      matesSpan.innerHTML = mates.length ? mates.join(", ") : "—";
     } else {
       matesSpan.textContent = "";
     }
@@ -175,10 +255,15 @@ export function updateTeamTopBar(round) {
 
       const mates = ids
         .filter((id) => id !== gameManager.playerId)
-        .map((id) => gameManager.players[id]?.name)
+        .map((id) => {
+          const name = gameManager.players[id]?.name;
+          if (!name) return null;
+          const isActiveMate = activeId && id === activeId;
+          return `<span class="mate-name${isActiveMate ? " active" : ""}">${name}</span>`;
+        })
         .filter(Boolean);
 
-      matesSpanThem.textContent = mates.length ? mates.join(", ") : "—";
+      matesSpanThem.innerHTML = mates.length ? mates.join(", ") : "—";
     } else {
       matesSpanThem.textContent = "";
     }

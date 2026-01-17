@@ -9,6 +9,7 @@ import {
   generateRoomCode,
   ensurePlayerId,
   TOTAL_ROUNDS,
+  DEFAULT_LANGUAGE,
 } from "./constants.js";
 import { getDb } from "./firebase-init.js";
 
@@ -19,6 +20,8 @@ class GameManager {
     this.playerId = ensurePlayerId();
     const store = window.sessionStorage || window.localStorage;
     this.playerName = store.getItem(STORAGE.name) || "";
+    this.language = store.getItem(STORAGE.lang) || DEFAULT_LANGUAGE; // user preference
+    this.roomLanguage = null; // authoritative language set by host for the room
     this.roomId = store.getItem(STORAGE.room) || null;
     this.players = {}; // {playerId:{name,team}}
     this.teams = { A: [], B: [] };
@@ -61,6 +64,8 @@ class GameManager {
       generateRoomCode();
     const store = window.sessionStorage || window.localStorage;
     store.setItem(STORAGE.room, this.roomId);
+    // Host's language becomes authoritative for the room
+    this.roomLanguage = this.language || DEFAULT_LANGUAGE;
     this.isCreator = true;
     this.creatorId = this.playerId;
     // Host assegnato direttamente a Team A
@@ -82,6 +87,12 @@ class GameManager {
       db.ref(`rooms/${this.roomId}`).once("value", (snap) => {
         const room = snap.val();
         if (!room) return; // stanza non esistente
+        // Adopt host language if available
+        if (room.language) {
+          this.roomLanguage = room.language;
+          this.language = room.language;
+          store.setItem(STORAGE.lang, room.language);
+        }
         const existingPlayers = room.players || {};
         const phase = room.state?.phase || "lobby";
         const gameStarted = phase !== "lobby";
@@ -243,6 +254,31 @@ class GameManager {
       });
     }
     this._emit();
+  }
+
+  kickPlayer(playerId) {
+    if (!this.isCreator) return false;
+    if (this.phase !== "lobby") return false;
+    if (!playerId || playerId === this.creatorId) return false;
+    if (!this.roomId) return false;
+
+    // Remove from local state
+    ["A", "B"].forEach((t) => {
+      this.teams[t] = this.teams[t].filter((id) => id !== playerId);
+    });
+    delete this.players[playerId];
+
+    const db = getDb();
+    if (db) {
+      db.ref(`rooms/${this.roomId}/players/${playerId}`).remove();
+      db.ref(`rooms/${this.roomId}/teams`).set({
+        A: this.teams.A,
+        B: this.teams.B,
+      });
+    }
+
+    this._emit();
+    return true;
   }
 
   getTeamList(team) {
@@ -813,16 +849,50 @@ class GameManager {
     if (!this.isCreator || !this.roomId) return;
     const db = getDb();
     if (!db) return;
+    this.roomLanguage = this.roomLanguage || this.language || DEFAULT_LANGUAGE;
+    const langKey = (this.roomLanguage || this.language || DEFAULT_LANGUAGE)
+      .toLowerCase()
+      .startsWith("en")
+      ? "eng"
+      : "ita";
+    const wordlistPath =
+      langKey === "eng" ? "wordlist-eng.txt" : "wordlist-ita.txt";
     // Carica wordlist e genera nuove 8 parole (4 per team)
     let aWords = [];
     let bWords = [];
     try {
-      const resp = await fetch("wordlist.txt", { cache: "no-cache" });
-      const txt = await resp.text();
-      const lines = txt
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith("#"));
+      const parseList = (txt) =>
+        txt
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(
+            (l) =>
+              l &&
+              !l.startsWith("#") &&
+              !/^<!?doctype/i.test(l) &&
+              !/^<html/i.test(l) &&
+              !l.includes("<")
+          );
+
+      const fetchList = async (path) => {
+        const resp = await fetch(path, { cache: "no-cache" });
+        if (!resp.ok) throw new Error(`wordlist fetch failed: ${path}`);
+        const txt = await resp.text();
+        const lines = parseList(txt);
+        if (!lines.length) throw new Error(`wordlist empty: ${path}`);
+        return lines;
+      };
+
+      let lines = await fetchList(wordlistPath);
+      // Se vuota, prova fallback opposto, poi legacy
+      if (!lines.length) {
+        const fallback =
+          langKey === "eng" ? "wordlist-ita.txt" : "wordlist-eng.txt";
+        lines = await fetchList(fallback);
+      }
+      if (!lines.length) {
+        lines = await fetchList("wordlist.txt");
+      }
       for (let i = lines.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [lines[i], lines[j]] = [lines[j], lines[i]];
@@ -847,6 +917,8 @@ class GameManager {
     const updates = {};
     updates[`rooms/${this.roomId}/words/A`] = aWords;
     updates[`rooms/${this.roomId}/words/B`] = bWords;
+    updates[`rooms/${this.roomId}/language`] =
+      this.roomLanguage || this.language || DEFAULT_LANGUAGE;
     updates[`rooms/${this.roomId}/hints`] = {};
     updates[`rooms/${this.roomId}/clues`] = {};
     updates[`rooms/${this.roomId}/guesses`] = {};
@@ -908,6 +980,7 @@ class GameManager {
         A: { round_1: codeA1 },
         B: { round_1: codeB1 },
       },
+      language: this.roomLanguage || this.language || DEFAULT_LANGUAGE,
       hints: {},
       clues: {},
       guesses: {},
@@ -1086,6 +1159,19 @@ class GameManager {
             r
           );
           return; // evita emit per client non più valido
+        }
+        this._emit();
+      })
+    );
+    // language
+    this._listeners.push(
+      db.ref(`rooms/${this.roomId}/language`).on("value", (snap) => {
+        const lang = snap.val();
+        if (lang) {
+          this.roomLanguage = lang;
+          this.language = lang;
+          const store = window.sessionStorage || window.localStorage;
+          store.setItem(STORAGE.lang, lang);
         }
         this._emit();
       })

@@ -13,6 +13,8 @@ export const STORAGE = Object.freeze({
   playerId: "dc_pid",
 });
 
+export const DEFAULT_LANGUAGE = "it"; // "it" | "en"
+
 export const PHASES = Object.freeze({
   LOBBY: "lobby",
   CLUES: "clues",

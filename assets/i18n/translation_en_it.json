@@ -1,0 +1,150 @@
+{
+  "_meta": {
+    "language": "it",
+    "fallback": "en",
+    "updated": "2026-01-17",
+    "author": "Traduzione basata sui testi dell'app"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "Annulla",
+    "confirm": "Conferma",
+    "close": "Chiudi",
+    "copy": "Copia",
+    "copied": "Copiato",
+    "back": "Indietro"
+  },
+  "landing": {
+    "title": "Decrypto Multiplayer",
+    "tagline": "Deduzione di parole in tempo reale • 8 round • 2 squadre",
+    "namePlaceholder": "Il tuo nome",
+    "languageLabel": "Lingua",
+    "play": "OK"
+  },
+  "createJoin": {
+    "title": "Multiplayer",
+    "playerLabel": "Giocatore:",
+    "createRoom": "+ Crea una stanza",
+    "joinRoom": "Entra in una stanza",
+    "note": "Crea una stanza nuova o unisciti a una esistente.",
+    "exit": "Esci"
+  },
+  "join": {
+    "title": "Entra nella stanza",
+    "codePlaceholder": "ABCD",
+    "joinButton": "Entra",
+    "note": "Inserisci il codice stanza per entrare.",
+    "exit": "Esci"
+  },
+  "room": {
+    "title": "Lobby",
+    "roomLabel": "Stanza:",
+    "copyRoomId": "Copia ID stanza",
+    "copiedRoomId": "Copiato!",
+    "inviteLink": "Clicca qui per il link di invito",
+    "teamA": "Squadra A",
+    "teamB": "Squadra B",
+    "joinA": "Entra in A",
+    "joinB": "Entra in B",
+    "waiting": "In attesa",
+    "startGame": "AVVIA PARTITA",
+    "startGameCta": "AVVIA PARTITA",
+    "waitingPlayers": "In attesa di giocatori... (2+ per iniziare)",
+    "exit": "Esci"
+  },
+  "lobby": {
+    "title": "Sala d'attesa",
+    "players": "Giocatori",
+    "kick": "Espelli",
+    "waitingHost": "In attesa che l'host avvii",
+    "selectLanguage": "Seleziona lingua",
+    "languageSet": "Lingua aggiornata",
+    "ready": "Pronto",
+    "notReady": "Non pronto",
+    "changeTeam": "Cambia squadra"
+  },
+  "game": {
+    "round": "Round",
+    "turn": "Mossa",
+    "teamTurn": "Tocca alla squadra",
+    "youAre": "Tu sei",
+    "hintGiver": "Criptatore",
+    "guesser": "Decodificatore",
+    "submit": "Invia",
+    "next": "Avanti",
+    "back": "Indietro",
+    "timer": "Timer",
+    "words": "Parole",
+    "enterClues": "Inserisci gli indizi",
+    "enterGuesses": "Inserisci i tentativi",
+    "confirm": "Conferma",
+    "logs": "Log partita",
+    "chat": "Chat",
+    "opponentChat": "Chat avversari",
+    "teamChat": "Chat squadra"
+  },
+  "actions": {
+    "clues_active": "{name}, scrivi i tuoi indizi e invia:",
+    "clues_passive": "{name} sta dando gli indizi",
+    "guess_us_active": "I tuoi compagni stanno indovinando",
+    "guess_us_passive": "Indovina il codice",
+    "guess_us_them": "In attesa dei tentativi della squadra",
+    "guess_them_active_us": "Indovina gli indizi degli avversari (oppure vai su THEM)",
+    "guess_them_passive_us": "I compagni stanno indovinando il codice degli avversari",
+    "guess_them_active_them": "Indovina le parole della Squadra {team}",
+    "guess_them_passive_them": "I compagni stanno indovinando gli avversari",
+    "conf_us_active": "Conferma il codice",
+    "conf_us_passive": "{name} sta digitando il codice corretto...",
+    "conf_us_them": "In attesa della conferma del codice",
+    "conf_them": "Invia le tue ipotesi agli avversari",
+    "review_round_us": "Round completo! Clicca prossimo round per continuare",
+    "review_round_them": "Round completo! Rivedi gli indizi avversari, poi clicca prossimo round",
+    "waiting": "In attesa..."
+  },
+  "buttons": {
+    "submitClues": "Invia",
+    "submitGuess": "Invia tentativo",
+    "submitConfUs": "Conferma squadra",
+    "submitConfThem": "Invia agli avversari",
+    "submitTGuess": "Invia tentativo"
+  },
+  "phases": {
+    "lobby": "Sala",
+    "clue": "Indizi",
+    "guess": "Decodifica",
+    "collaborative": "Collaborazione",
+    "reveal": "Rivela",
+    "end": "Fine partita"
+  },
+  "errors": {
+    "generic": "Qualcosa è andato storto",
+    "wordlistLoad": "Impossibile caricare la lista parole",
+    "connection": "Connessione assente o instabile",
+    "notEnoughPlayers": "Servono più giocatori per iniziare",
+    "languageUnavailable": "Lingua non disponibile",
+    "retry": "Riprova",
+    "missingName": "Inserisci un nome prima di continuare.",
+    "missingNameBack": "Nome mancante (torna indietro).",
+    "invalidRoomCode": "Il codice stanza deve avere 4 lettere (A-Z)."
+  },
+  "modals": {
+    "confirmStartTitle": "Avviare la partita?",
+    "confirmStartBody": "Controlla che tutti siano pronti prima di iniziare.",
+    "kickTitle": "Espellere il giocatore?",
+    "kickBody": "Il giocatore verrà rimosso dalla stanza.",
+    "languageChangeTitle": "Cambiare lingua?",
+    "languageChangeBody": "Alcuni testi potrebbero aggiornarsi durante la partita."
+  },
+  "notifications": {
+    "playerJoined": "Un giocatore si è unito",
+    "playerLeft": "Un giocatore è uscito",
+    "languageChanged": "Lingua aggiornata",
+    "linkCopied": "Link copiato negli appunti"
+  },
+  "wordlist": {
+    "loading": "Caricamento lista parole...",
+    "validationFailed": "La lista parole non è valida",
+    "fallback": "Uso la lista parole di default",
+    "noWords": "Nessuna parola disponibile"
+  }
+}

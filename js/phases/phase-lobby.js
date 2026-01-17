@@ -3,11 +3,32 @@
  * Handles player name entry, room creation/joining, team assignment
  */
 
-import { STORAGE } from "../constants.js";
+import { STORAGE, DEFAULT_LANGUAGE } from "../constants.js";
 import { gameManager } from "../GameManager.js";
 import { getDb } from "../firebase-init.js";
 
 export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
+  const joinCodeInput = document.getElementById("join-code");
+  const btnJoinRoom = document.getElementById("btn-join-room");
+
+  const rawInvite =
+    new URL(window.location.href).searchParams.get("room") || "";
+  const inviteCode = rawInvite.toUpperCase().trim();
+  const hasInviteCode = /^[A-Z]{4}$/.test(inviteCode);
+
+  const prefillInviteCode = () => {
+    if (hasInviteCode && joinCodeInput) {
+      joinCodeInput.value = inviteCode;
+    }
+  };
+
+  const autoJoinFromInvite = () => {
+    if (!hasInviteCode) return false;
+    prefillInviteCode();
+    btnJoinRoom?.click();
+    return true;
+  };
+
   // Lobby: Player name entry
   const playBtn = document.getElementById("btn-enter-createjoin");
   const lobbyNameInput = document.getElementById("lobby-player-name");
@@ -22,6 +43,15 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
     gameManager.setName(rawName);
     const cjLabel = document.getElementById("player-name-label");
     if (cjLabel) cjLabel.textContent = gameManager.playerName;
+
+    if (hasInviteCode) {
+      document.getElementById("join-player-label").textContent =
+        "Player: " + gameManager.playerName;
+      show("join");
+      autoJoinFromInvite();
+      return;
+    }
+
     show("createjoin");
   });
 
@@ -29,11 +59,26 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
   const selLang = document.getElementById("sel-language");
   if (selLang) {
     const store = window.sessionStorage || window.localStorage;
-    const stored = store.getItem(STORAGE.lang);
-    if (stored) selLang.value = stored;
-    selLang.addEventListener("change", (e) =>
-      store.setItem(STORAGE.lang, e.target.value)
-    );
+    const allowed = ["it", "en"];
+    const initial = gameManager.roomLanguage || DEFAULT_LANGUAGE;
+    selLang.value = initial;
+    gameManager.language = initial;
+    store.setItem(STORAGE.lang, initial);
+    selLang.addEventListener("change", (e) => {
+      const val = e.target.value;
+      store.setItem(STORAGE.lang, val);
+      gameManager.language = val;
+      // If host hasn't created room yet, prep room language
+      if (!gameManager.roomId) {
+        gameManager.roomLanguage = val;
+      } else if (gameManager.isCreator && gameManager.phase === "lobby") {
+        gameManager.roomLanguage = val;
+        const db = getDb();
+        if (db && gameManager.roomId) {
+          db.ref(`rooms/${gameManager.roomId}/language`).set(val);
+        }
+      }
+    });
   }
 
   // Player name label
@@ -69,13 +114,11 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
     if (!validatePlayerName()) return;
     document.getElementById("join-player-label").textContent =
       "Player: " + gameManager.playerName;
+    prefillInviteCode();
     show("join");
   });
 
   // Join room
-  const joinCodeInput = document.getElementById("join-code");
-  const btnJoinRoom = document.getElementById("btn-join-room");
-
   btnJoinRoom?.addEventListener("click", () => {
     const code = (joinCodeInput.value || "").toUpperCase().trim();
     if (!/^[A-Z]{4}$/.test(code)) {
@@ -144,6 +187,10 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
     }
   });
 
+  if (hasInviteCode) {
+    prefillInviteCode();
+  }
+
   // Team selection buttons
   const btnJoinA = document.getElementById("btn-join-a");
   const btnJoinB = document.getElementById("btn-join-b");
@@ -163,17 +210,35 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
   // Host move player buttons (event delegation for dynamic buttons)
   document.body.addEventListener("click", (e) => {
     const moveBtn = e.target.closest(".mini-move");
-    if (!moveBtn) return;
+    if (moveBtn) {
+      const playerId = moveBtn.getAttribute("data-pid");
+      const targetTeam = moveBtn.getAttribute("data-to");
 
-    const playerId = moveBtn.getAttribute("data-pid");
-    const targetTeam = moveBtn.getAttribute("data-to");
+      if (!playerId || !targetTeam) return;
+      if (!gameManager.isCreator) return; // Only host can move players
+      if (gameManager.phase !== "lobby") return;
 
-    if (!playerId || !targetTeam) return;
-    if (!gameManager.isCreator) return; // Only host can move players
+      // Move player to target team using existing method
+      gameManager.reassignPlayer(playerId, targetTeam);
+      updateRoomLobby();
+      return;
+    }
+
+    const kickBtn = e.target.closest(".mini-kick");
+    if (!kickBtn) return;
+
+    const playerId = kickBtn.getAttribute("data-pid");
+    const playerName = kickBtn.getAttribute("data-name") || "this player";
+
+    if (!playerId) return;
+    if (!gameManager.isCreator) return; // Only host can kick
     if (gameManager.phase !== "lobby") return;
+    if (playerId === gameManager.creatorId) return; // cannot kick host
 
-    // Move player to target team using existing method
-    gameManager.reassignPlayer(playerId, targetTeam);
+    const confirmed = confirm(`Remove ${playerName} from the lobby?`);
+    if (!confirmed) return;
+
+    gameManager.kickPlayer(playerId);
     updateRoomLobby();
   });
 }
@@ -182,7 +247,7 @@ export function updateRoomLobby() {
   // Update room code display
   const roomIdLabel = document.getElementById("room-id-label");
   if (roomIdLabel && gameManager.roomId) {
-    roomIdLabel.textContent = gameManager.roomId;
+    roomIdLabel.textContent = gameManager.roomId.split("").join(" ");
   }
 
   const aList = document.getElementById("team-a-list");
@@ -199,9 +264,12 @@ export function updateRoomLobby() {
       .map(({ pid, name }) => {
         const isSelf = pid === gameManager.playerId;
         const isHost = pid === gameManager.creatorId;
+        const kickBtn = gameManager.isCreator
+          ? `<button class="mini-kick" data-pid="${pid}" data-name="${name}">Kick</button>`
+          : "";
         return `<li class="${isSelf ? "self" : ""} ${
           isHost ? "creator" : ""
-        }">${name}${isHost ? " (Host)" : ""}</li>`;
+        }">${name}${isHost ? " (Host)" : ""} ${kickBtn}</li>`;
       })
       .join("");
   }
@@ -218,9 +286,13 @@ export function updateRoomLobby() {
     const moveBtn = gameManager.isCreator
       ? `<button class="mini-move" data-pid="${pid}" data-to="B">→B</button>`
       : "";
+    const kickBtn =
+      gameManager.isCreator && pid !== gameManager.creatorId
+        ? `<button class="mini-kick" data-pid="${pid}" data-name="${p.name}">Kick</button>`
+        : "";
     return `<li class="${isSelf ? "self" : ""} ${isHost ? "creator" : ""}">${
       p.name
-    }${isHost ? " (Host)" : ""} ${moveBtn}</li>`;
+    }${isHost ? " (Host)" : ""} ${moveBtn} ${kickBtn}</li>`;
   }).join("");
 
   bList.innerHTML = gameManager.teams.B.map((pid) => {
@@ -231,9 +303,13 @@ export function updateRoomLobby() {
     const moveBtn = gameManager.isCreator
       ? `<button class="mini-move" data-pid="${pid}" data-to="A">→A</button>`
       : "";
+    const kickBtn =
+      gameManager.isCreator && pid !== gameManager.creatorId
+        ? `<button class="mini-kick" data-pid="${pid}" data-name="${p.name}">Kick</button>`
+        : "";
     return `<li class="${isSelf ? "self" : ""} ${isHost ? "creator" : ""}">${
       p.name
-    }${isHost ? " (Host)" : ""} ${moveBtn}</li>`;
+    }${isHost ? " (Host)" : ""} ${moveBtn} ${kickBtn}</li>`;
   }).join("");
 
   // Start button: show only for host, enable when 2+ players

@@ -3,7 +3,7 @@
  * Imports and coordinates all phase modules
  */
 
-import { STORAGE, TOTAL_ROUNDS } from "./constants.js";
+import { STORAGE, TOTAL_ROUNDS, DEFAULT_LANGUAGE } from "./constants.js";
 import { gameManager } from "./GameManager.js";
 import { ensureFirebaseReady, getDb } from "./firebase-init.js";
 import { teamChat } from "./TeamChat.js";
@@ -61,6 +61,253 @@ import {
 import { initClueWordModal } from "./phases/phase-clue-word-modal.js";
 import { initLogsModal } from "./phases/phase-logs.js";
 
+// Simple i18n support
+const TRANSLATION_URL = "assets/i18n/translation_en_it.json";
+const translationCache = {};
+let currentLang = DEFAULT_LANGUAGE;
+const defaultTexts = {
+  "common.back": "Back",
+  "landing.title": "Decrypto Multiplayer",
+  "landing.tagline": "Realtime multiplayer word deduction • 8 rounds • 2 teams",
+  "landing.namePlaceholder": "Your Name",
+  "landing.languageLabel": "Language",
+  "landing.play": "OK",
+  "createJoin.title": "Multiplayer",
+  "createJoin.playerLabel": "Player:",
+  "createJoin.createRoom": "+ Create Room",
+  "createJoin.joinRoom": "Join Room",
+  "createJoin.note": "Create a new room or join an existing one.",
+  "createJoin.exit": "Exit",
+  "join.title": "Join Room",
+  "join.codePlaceholder": "ABCD",
+  "join.joinButton": "Join Room",
+  "join.note": "Enter the room code to join.",
+  "join.exit": "Exit",
+  "room.title": "Room Lobby",
+  "room.roomLabel": "Room:",
+  "room.inviteLink": "Click here for the invite link",
+  "room.teamA": "Team A",
+  "room.teamB": "Team B",
+  "room.joinA": "Join A",
+  "room.joinB": "Join B",
+  "room.startGame": "START GAME",
+  "room.waitingPlayers": "Waiting for players... (2+ to start)",
+  "room.copiedRoomId": "Copied!",
+  "room.waiting": "Waiting",
+  "buttons.submitClues": "Send",
+  "buttons.submitGuess": "Send Guess",
+  "buttons.submitConfUs": "Team Confirm",
+  "buttons.submitConfThem": "Send",
+  "buttons.submitTGuess": "Send Guess",
+  "actions.clues_active": "{name}, Type your clues and send:",
+  "actions.clues_passive": "{name} is providing clues",
+  "actions.guess_us_active": "your teammates are guessing",
+  "actions.guess_us_passive": "Guess the code",
+  "actions.guess_us_them": "Waiting for teammates guesses",
+  "actions.guess_them_active_us": "Guess opponents clues (or go to THEM page)",
+  "actions.guess_them_passive_us": "Teammates are guessing opponents clues",
+  "actions.guess_them_active_them": "Guess Team {team}'s words",
+  "actions.guess_them_passive_them": "Teammates are guessing opponents clues",
+  "actions.conf_us_active": "Confirm the code",
+  "actions.conf_us_passive": "{name} is typing the right code...",
+  "actions.conf_us_them": "Waiting for your code confirmation",
+  "actions.conf_them": "Send your guesses to the opponent",
+  "actions.review_round_us": "Round complete! Click next round to continue",
+  "actions.review_round_them":
+    "Round complete! Review opponent's clues, then click next round",
+  "actions.waiting": "Waiting...",
+};
+
+function formatString(str, params = {}) {
+  if (typeof str !== "string") return str;
+  return Object.entries(params).reduce(
+    (acc, [key, val]) => acc.replaceAll(`{${key}}`, val),
+    str
+  );
+}
+
+async function loadTranslations(lang) {
+  if (translationCache[lang] !== undefined) return translationCache[lang];
+  if (!lang || !lang.startsWith("it")) {
+    translationCache[lang] = null;
+    return null;
+  }
+  const res = await fetch(TRANSLATION_URL, { cache: "no-cache" });
+  if (!res.ok) throw new Error(`Failed to fetch translations (${res.status})`);
+  const json = await res.json();
+  translationCache[lang] = json;
+  return json;
+}
+
+function translate(key, lang = currentLang) {
+  const data = translationCache[lang];
+  if (!data) return null;
+  return key
+    .split(".")
+    .reduce(
+      (acc, part) => (acc && acc[part] !== undefined ? acc[part] : null),
+      data
+    );
+}
+
+function getText(key, lang = currentLang) {
+  const translated = translate(key, lang);
+  if (translated !== null && translated !== undefined) return translated;
+  return defaultTexts[key] || null;
+}
+
+function applyTranslations(lang = currentLang) {
+  currentLang = lang;
+  const t = (key, fallback = null) => getText(key, lang) || fallback;
+
+  const setText = (selector, key, fallback = null) => {
+    const el = document.querySelector(selector);
+    if (el && t(key) !== null) el.textContent = t(key, fallback);
+  };
+
+  const setPlaceholder = (selector, key) => {
+    const el = document.querySelector(selector);
+    if (el && t(key) !== null) el.placeholder = t(key);
+  };
+
+  setText(
+    "#view-language .big-title",
+    "landing.title",
+    defaultTexts["landing.title"]
+  );
+  setText(
+    "#view-lobby .big-title",
+    "landing.title",
+    defaultTexts["landing.title"]
+  );
+  setText(
+    "#view-lobby .tagline",
+    "landing.tagline",
+    defaultTexts["landing.tagline"]
+  );
+  // keep intro play button glyph static to avoid initial flashes
+  setText(
+    "#btn-enter-createjoin",
+    "landing.play",
+    defaultTexts["landing.play"]
+  );
+  setPlaceholder("#lobby-player-name", "landing.namePlaceholder");
+  setText("#btn-back-language", "common.back", defaultTexts["common.back"]);
+
+  setText(
+    "#view-createjoin h1",
+    "createJoin.title",
+    defaultTexts["createJoin.title"]
+  );
+  setText(
+    "#btn-create-room",
+    "createJoin.createRoom",
+    defaultTexts["createJoin.createRoom"]
+  );
+  setText(
+    "#btn-go-join",
+    "createJoin.joinRoom",
+    defaultTexts["createJoin.joinRoom"]
+  );
+  setText(
+    "#view-createjoin .note",
+    "createJoin.note",
+    defaultTexts["createJoin.note"]
+  );
+  setText(
+    "#view-createjoin [data-exit]",
+    "createJoin.exit",
+    defaultTexts["createJoin.exit"]
+  );
+
+  setText("#view-join h1", "join.title", defaultTexts["join.title"]);
+  setPlaceholder("#join-code", "join.codePlaceholder");
+  setText("#btn-join-room", "join.joinButton", defaultTexts["join.joinButton"]);
+  setText("#view-join .note", "join.note", defaultTexts["join.note"]);
+  setText("#view-join [data-exit]", "join.exit", defaultTexts["join.exit"]);
+
+  setText("#view-room h1", "room.title", defaultTexts["room.title"]);
+  setText(
+    "#invite-link-copy",
+    "room.inviteLink",
+    defaultTexts["room.inviteLink"]
+  );
+  setText("#btn-join-a", "room.joinA", defaultTexts["room.joinA"]);
+  setText("#btn-join-b", "room.joinB", defaultTexts["room.joinB"]);
+  setText("#btn-start-game", "room.startGame", defaultTexts["room.startGame"]);
+  setText(
+    "#view-room .note",
+    "room.waitingPlayers",
+    defaultTexts["room.waitingPlayers"]
+  );
+  setText(
+    "#room-id-copied",
+    "room.copiedRoomId",
+    defaultTexts["room.copiedRoomId"]
+  );
+
+  const roomHeader = document.querySelector(".room-header");
+  const roomLabelText = t("room.roomLabel") || defaultTexts["room.roomLabel"];
+  if (roomHeader && roomLabelText) {
+    const firstText = Array.from(roomHeader.childNodes).find(
+      (n) => n.nodeType === Node.TEXT_NODE
+    );
+    if (firstText) firstText.textContent = `${roomLabelText} `;
+  }
+
+  const teamATitle = document.querySelector("#view-room .team:nth-child(1) h2");
+  const teamBTitle = document.querySelector("#view-room .team:nth-child(2) h2");
+  if (teamATitle)
+    teamATitle.textContent =
+      t("room.teamA") || defaultTexts["room.teamA"] || teamATitle.textContent;
+  if (teamBTitle)
+    teamBTitle.textContent =
+      t("room.teamB") || defaultTexts["room.teamB"] || teamBTitle.textContent;
+
+  const waitingBox = document.getElementById("unassigned-box");
+  if (waitingBox) {
+    const h2 = waitingBox.querySelector("h2");
+    const waitText = t("room.waiting") || defaultTexts["room.waiting"];
+    if (h2 && waitText) h2.textContent = waitText;
+  }
+
+  const playerLabel = document.querySelector(".player-name-display");
+  if (playerLabel) {
+    const span = playerLabel.querySelector("span");
+    const labelText =
+      t("createJoin.playerLabel") || defaultTexts["createJoin.playerLabel"];
+    playerLabel.textContent = labelText ? `${labelText} ` : "";
+    if (span) playerLabel.appendChild(span);
+  }
+
+  // Action buttons (US/THEM)
+  setText(
+    "#btn-submit-clues",
+    "buttons.submitClues",
+    defaultTexts["buttons.submitClues"]
+  );
+  setText(
+    "#btn-submit-guess",
+    "buttons.submitGuess",
+    defaultTexts["buttons.submitGuess"]
+  );
+  setText(
+    "#btn-submit-conf-us",
+    "buttons.submitConfUs",
+    defaultTexts["buttons.submitConfUs"]
+  );
+  setText(
+    "#btn-submit-conf-them",
+    "buttons.submitConfThem",
+    defaultTexts["buttons.submitConfThem"]
+  );
+  setText(
+    "#btn-submit-tguess",
+    "buttons.submitTGuess",
+    defaultTexts["buttons.submitTGuess"]
+  );
+}
+
 // Global state
 let currentView = "us";
 let gameStarted = false;
@@ -84,6 +331,7 @@ function showToast(message, duration = 3000) {
 
 // View management
 const views = {
+  language: document.getElementById("view-language"),
   lobby: document.getElementById("view-lobby"),
   createjoin: document.getElementById("view-createjoin"),
   join: document.getElementById("view-join"),
@@ -125,6 +373,66 @@ function resetInputs(selectors = []) {
       input.disabled = false;
       input.classList.remove("disabled-clue");
     });
+  });
+}
+
+// Intro language picker wiring
+function initLanguageIntro() {
+  const introSelect = document.getElementById("sel-language-intro");
+  const flagButtons = Array.from(document.querySelectorAll(".flag-btn"));
+  const continueBtn = document.getElementById("btn-language-continue");
+  const lobbySelect = document.getElementById("sel-language");
+  const store = window.sessionStorage || window.localStorage;
+  const allowed = ["it", "en"];
+
+  const applyLang = async (lang) => {
+    const safeLang = allowed.includes(lang) ? lang : DEFAULT_LANGUAGE;
+    if (introSelect) introSelect.value = safeLang;
+    if (lobbySelect) lobbySelect.value = safeLang;
+    flagButtons.forEach((btn) =>
+      btn.classList.toggle("active", btn.dataset.lang === safeLang)
+    );
+    gameManager.language = safeLang;
+    if (!gameManager.roomId) {
+      gameManager.roomLanguage = safeLang;
+    }
+    store.setItem(STORAGE.lang, safeLang);
+    try {
+      await loadTranslations(safeLang);
+    } catch (err) {
+      console.warn("[i18n] Unable to load translations", err);
+    }
+    applyTranslations(safeLang);
+  };
+
+  const initialLang =
+    store.getItem(STORAGE.lang) ||
+    gameManager.roomLanguage ||
+    gameManager.language ||
+    DEFAULT_LANGUAGE;
+  applyLang(initialLang);
+
+  introSelect?.addEventListener("change", (e) => {
+    applyLang(e.target.value);
+  });
+
+  lobbySelect?.addEventListener("change", (e) => {
+    applyLang(e.target.value);
+  });
+
+  flagButtons.forEach((btn) => {
+    btn.addEventListener("click", () => applyLang(btn.dataset.lang));
+  });
+
+  continueBtn?.addEventListener("click", () => {
+    show("lobby");
+    const nameInput = document.getElementById("lobby-player-name");
+    if (nameInput) {
+      requestAnimationFrame(() => {
+        nameInput.focus();
+        if (nameInput.select) nameInput.select();
+      });
+    }
   });
 }
 
@@ -217,42 +525,85 @@ function updateActionBar() {
   const actions = {
     clues: {
       us: isActive
-        ? `${me.name}, Type your clues and send:`
-        : `${activeName} is providing clues`,
+        ? formatString(
+            translate("actions.clues_active", currentLang) ||
+              `${me.name}, Type your clues and send:`,
+            { name: me.name }
+          )
+        : formatString(
+            translate("actions.clues_passive", currentLang) ||
+              `${activeName} is providing clues`,
+            { name: activeName }
+          ),
       them: isActive
-        ? `${me.name}, Type your clues and send:`
-        : `${activeName} is providing clues`,
+        ? formatString(
+            translate("actions.clues_active", currentLang) ||
+              `${me.name}, Type your clues and send:`,
+            { name: me.name }
+          )
+        : formatString(
+            translate("actions.clues_passive", currentLang) ||
+              `${activeName} is providing clues`,
+            { name: activeName }
+          ),
       buttons: isActive ? [elements.btnSubmitClues] : [],
     },
     guess_us: {
-      us: isActive ? "your teammates are guessing" : "Guess the code",
-      them: "Waiting for teammates guesses",
+      us: isActive
+        ? translate("actions.guess_us_active", currentLang) ||
+          "your teammates are guessing"
+        : translate("actions.guess_us_passive", currentLang) ||
+          "Guess the code",
+      them:
+        translate("actions.guess_us_them", currentLang) ||
+        "Waiting for teammates guesses",
       buttons: !isActive ? [elements.btnSubmitGuess] : [],
     },
     conf_us: {
       us: isActive
-        ? "Confirm the code"
-        : `${activeName} is typing the right code...`,
-      them: "Waiting for your code confirmation",
+        ? translate("actions.conf_us_active", currentLang) || "Confirm the code"
+        : formatString(
+            translate("actions.conf_us_passive", currentLang) ||
+              `${activeName} is typing the right code...`,
+            { name: activeName }
+          ),
+      them:
+        translate("actions.conf_us_them", currentLang) ||
+        "Waiting for your code confirmation",
       buttons: [elements.btnSubmitConfUs],
     },
     guess_them: {
       us: isActive
-        ? "Guess opponents clues (or go to THEM page)"
-        : "Teammates are guessing opponents clues",
+        ? translate("actions.guess_them_active_us", currentLang) ||
+          "Guess opponents clues (or go to THEM page)"
+        : translate("actions.guess_them_passive_us", currentLang) ||
+          "Teammates are guessing opponents clues",
       them: isActive
-        ? `Guess Team ${myTeam === "A" ? "B" : "A"}'s words`
-        : "Teammates are guessing opponents clues",
+        ? formatString(
+            translate("actions.guess_them_active_them", currentLang) ||
+              `Guess Team ${myTeam === "A" ? "B" : "A"}'s words`,
+            { team: myTeam === "A" ? "B" : "A" }
+          )
+        : translate("actions.guess_them_passive_them", currentLang) ||
+          "Teammates are guessing opponents clues",
       buttons: allowSubmitGuessThem ? [elements.btnSubmitTGuess] : [],
     },
     conf_them: {
-      us: "Send your guesses to the opponent",
-      them: "Send your guesses to the opponent",
+      us:
+        translate("actions.conf_them", currentLang) ||
+        "Send your guesses to the opponent",
+      them:
+        translate("actions.conf_them", currentLang) ||
+        "Send your guesses to the opponent",
       buttons: [elements.btnSubmitConfThem],
     },
     review_round: {
-      us: "Round complete! Click next round to continue",
-      them: "Round complete! Review opponent's clues, then click next round",
+      us:
+        translate("actions.review_round_us", currentLang) ||
+        "Round complete! Click next round to continue",
+      them:
+        translate("actions.review_round_them", currentLang) ||
+        "Round complete! Review opponent's clues, then click next round",
       buttons: [],
     },
   };
@@ -261,8 +612,8 @@ function updateActionBar() {
     teamPhase === "conf_them" && !hasMyTGuesses ? "guess_them" : teamPhase;
 
   const phase = actions[effectivePhase] || {
-    us: "Waiting...",
-    them: "Waiting...",
+    us: translate("actions.waiting", currentLang) || "Waiting...",
+    them: translate("actions.waiting", currentLang) || "Waiting...",
     buttons: [],
   };
 
@@ -373,6 +724,7 @@ function updateGuessInputs() {
 function initUI() {
   if (hasInitialized) return;
   hasInitialized = true;
+  initLanguageIntro();
   // Initialize lobby phase
   initLobbyPhase(show, updateRoomLobby, updateGuessInputs);
 
@@ -424,14 +776,30 @@ function initUI() {
     if (gameManager.isCreator) {
       if (!gameManager.words.A.length && !gameManager.words.B.length) {
         try {
-          await loadWordList();
+          const lang = gameManager.roomLanguage || gameManager.language;
+          await loadWordList(lang);
           const picked = pickUniqueWords(8);
+          if (picked.length < 8) {
+            // Fallback to legacy default list if language list was insufficient
+            await loadWordList("ita");
+            picked.splice(0, picked.length, ...pickUniqueWords(8));
+          }
           const wordsA = picked.slice(0, 4);
           const wordsB = picked.slice(4, 8);
           gameManager.setWords("A", wordsA);
           gameManager.setWords("B", wordsB);
         } catch (error) {
           console.error("[UI-CORE] Error setting words:", error);
+          if (
+            (gameManager.roomLanguage || gameManager.language || "").startsWith(
+              "en"
+            )
+          ) {
+            alert(
+              `Failed to load English word list. Returning to lobby.\n${error?.message || ""}`
+            );
+            show("lobby");
+          }
           return;
         }
       }
@@ -447,6 +815,10 @@ function initUI() {
       show("lobby");
     })
   );
+
+  // Back to language picker
+  const backLang = document.getElementById("btn-back-language");
+  backLang?.addEventListener("click", () => show("language"));
 
   // Reset button
   const btnResetGlobal = document.getElementById("btn-reset");
@@ -607,12 +979,13 @@ function initUI() {
     updateRoundButtons();
   });
 
-  // Pre-load wordlist in idle
+  // Pre-load wordlist in idle using room/host language
+  const preloadLang = () => gameManager.roomLanguage || gameManager.language;
   if (typeof requestIdleCallback === "function") {
     requestIdleCallback(
       () => {
         try {
-          loadWordList();
+          loadWordList(preloadLang());
         } catch (_) {}
       },
       { timeout: 2000 }
@@ -620,7 +993,7 @@ function initUI() {
   } else {
     setTimeout(() => {
       try {
-        loadWordList();
+        loadWordList(preloadLang());
       } catch (_) {}
     }, 800);
   }
@@ -634,7 +1007,7 @@ function initUI() {
   });
 
   // On load show lobby
-  show("lobby");
+  show("language");
 
   // Initialize Firebase then team chat
   ensureFirebaseReady().then((ready) => {
