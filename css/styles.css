@@ -843,9 +843,11 @@ body.them .us-layout .top-box {
 }
 
 .hint-text {
+  color: #333;
   flex: 1;
   text-align: left;
   font-weight: 400;
+  text-transform: uppercase;
 }
 
 .hint-text.crossed {

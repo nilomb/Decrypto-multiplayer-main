@@ -16,6 +16,14 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
   const inviteCode = rawInvite.toUpperCase().trim();
   const hasInviteCode = /^[A-Z]{4}$/.test(inviteCode);
 
+  const clearInviteParam = () => {
+    if (!hasInviteCode) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("room");
+    const next = url.pathname + (url.search || "") + (url.hash || "");
+    window.history.replaceState({}, "", next);
+  };
+
   const prefillInviteCode = () => {
     if (hasInviteCode && joinCodeInput) {
       joinCodeInput.value = inviteCode;
@@ -26,6 +34,7 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
     if (!hasInviteCode) return false;
     prefillInviteCode();
     btnJoinRoom?.click();
+    clearInviteParam();
     return true;
   };
 
@@ -128,6 +137,7 @@ export function initLobbyPhase(show, updateRoomLobby, updateGuessInputs) {
 
     const prevRoom = gameManager.roomId;
     gameManager.joinRoom(code);
+    clearInviteParam();
 
     setTimeout(() => {
       if (gameManager.roomId === code) {

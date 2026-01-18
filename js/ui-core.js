@@ -122,7 +122,7 @@ function formatString(str, params = {}) {
   if (typeof str !== "string") return str;
   return Object.entries(params).reduce(
     (acc, [key, val]) => acc.replaceAll(`{${key}}`, val),
-    str
+    str,
   );
 }
 
@@ -146,7 +146,7 @@ function translate(key, lang = currentLang) {
     .split(".")
     .reduce(
       (acc, part) => (acc && acc[part] !== undefined ? acc[part] : null),
-      data
+      data,
     );
 }
 
@@ -173,23 +173,23 @@ function applyTranslations(lang = currentLang) {
   setText(
     "#view-language .big-title",
     "landing.title",
-    defaultTexts["landing.title"]
+    defaultTexts["landing.title"],
   );
   setText(
     "#view-lobby .big-title",
     "landing.title",
-    defaultTexts["landing.title"]
+    defaultTexts["landing.title"],
   );
   setText(
     "#view-lobby .tagline",
     "landing.tagline",
-    defaultTexts["landing.tagline"]
+    defaultTexts["landing.tagline"],
   );
   // keep intro play button glyph static to avoid initial flashes
   setText(
     "#btn-enter-createjoin",
     "landing.play",
-    defaultTexts["landing.play"]
+    defaultTexts["landing.play"],
   );
   setPlaceholder("#lobby-player-name", "landing.namePlaceholder");
   setText("#btn-back-language", "common.back", defaultTexts["common.back"]);
@@ -197,27 +197,27 @@ function applyTranslations(lang = currentLang) {
   setText(
     "#view-createjoin h1",
     "createJoin.title",
-    defaultTexts["createJoin.title"]
+    defaultTexts["createJoin.title"],
   );
   setText(
     "#btn-create-room",
     "createJoin.createRoom",
-    defaultTexts["createJoin.createRoom"]
+    defaultTexts["createJoin.createRoom"],
   );
   setText(
     "#btn-go-join",
     "createJoin.joinRoom",
-    defaultTexts["createJoin.joinRoom"]
+    defaultTexts["createJoin.joinRoom"],
   );
   setText(
     "#view-createjoin .note",
     "createJoin.note",
-    defaultTexts["createJoin.note"]
+    defaultTexts["createJoin.note"],
   );
   setText(
     "#view-createjoin [data-exit]",
     "createJoin.exit",
-    defaultTexts["createJoin.exit"]
+    defaultTexts["createJoin.exit"],
   );
 
   setText("#view-join h1", "join.title", defaultTexts["join.title"]);
@@ -230,7 +230,7 @@ function applyTranslations(lang = currentLang) {
   setText(
     "#invite-link-copy",
     "room.inviteLink",
-    defaultTexts["room.inviteLink"]
+    defaultTexts["room.inviteLink"],
   );
   setText("#btn-join-a", "room.joinA", defaultTexts["room.joinA"]);
   setText("#btn-join-b", "room.joinB", defaultTexts["room.joinB"]);
@@ -238,19 +238,19 @@ function applyTranslations(lang = currentLang) {
   setText(
     "#view-room .note",
     "room.waitingPlayers",
-    defaultTexts["room.waitingPlayers"]
+    defaultTexts["room.waitingPlayers"],
   );
   setText(
     "#room-id-copied",
     "room.copiedRoomId",
-    defaultTexts["room.copiedRoomId"]
+    defaultTexts["room.copiedRoomId"],
   );
 
   const roomHeader = document.querySelector(".room-header");
   const roomLabelText = t("room.roomLabel") || defaultTexts["room.roomLabel"];
   if (roomHeader && roomLabelText) {
     const firstText = Array.from(roomHeader.childNodes).find(
-      (n) => n.nodeType === Node.TEXT_NODE
+      (n) => n.nodeType === Node.TEXT_NODE,
     );
     if (firstText) firstText.textContent = `${roomLabelText} `;
   }
@@ -284,27 +284,27 @@ function applyTranslations(lang = currentLang) {
   setText(
     "#btn-submit-clues",
     "buttons.submitClues",
-    defaultTexts["buttons.submitClues"]
+    defaultTexts["buttons.submitClues"],
   );
   setText(
     "#btn-submit-guess",
     "buttons.submitGuess",
-    defaultTexts["buttons.submitGuess"]
+    defaultTexts["buttons.submitGuess"],
   );
   setText(
     "#btn-submit-conf-us",
     "buttons.submitConfUs",
-    defaultTexts["buttons.submitConfUs"]
+    defaultTexts["buttons.submitConfUs"],
   );
   setText(
     "#btn-submit-conf-them",
     "buttons.submitConfThem",
-    defaultTexts["buttons.submitConfThem"]
+    defaultTexts["buttons.submitConfThem"],
   );
   setText(
     "#btn-submit-tguess",
     "buttons.submitTGuess",
-    defaultTexts["buttons.submitTGuess"]
+    defaultTexts["buttons.submitTGuess"],
   );
 }
 
@@ -390,7 +390,7 @@ function initLanguageIntro() {
     if (introSelect) introSelect.value = safeLang;
     if (lobbySelect) lobbySelect.value = safeLang;
     flagButtons.forEach((btn) =>
-      btn.classList.toggle("active", btn.dataset.lang === safeLang)
+      btn.classList.toggle("active", btn.dataset.lang === safeLang),
     );
     gameManager.language = safeLang;
     if (!gameManager.roomId) {
@@ -405,11 +405,8 @@ function initLanguageIntro() {
     applyTranslations(safeLang);
   };
 
-  const initialLang =
-    store.getItem(STORAGE.lang) ||
-    gameManager.roomLanguage ||
-    gameManager.language ||
-    DEFAULT_LANGUAGE;
+  // Default to Italian unless a room language is already set (e.g., joining a room)
+  const initialLang = gameManager.roomLanguage || DEFAULT_LANGUAGE;
   applyLang(initialLang);
 
   introSelect?.addEventListener("change", (e) => {
@@ -528,23 +525,23 @@ function updateActionBar() {
         ? formatString(
             translate("actions.clues_active", currentLang) ||
               `${me.name}, Type your clues and send:`,
-            { name: me.name }
+            { name: me.name },
           )
         : formatString(
             translate("actions.clues_passive", currentLang) ||
               `${activeName} is providing clues`,
-            { name: activeName }
+            { name: activeName },
           ),
       them: isActive
         ? formatString(
             translate("actions.clues_active", currentLang) ||
               `${me.name}, Type your clues and send:`,
-            { name: me.name }
+            { name: me.name },
           )
         : formatString(
             translate("actions.clues_passive", currentLang) ||
               `${activeName} is providing clues`,
-            { name: activeName }
+            { name: activeName },
           ),
       buttons: isActive ? [elements.btnSubmitClues] : [],
     },
@@ -565,7 +562,7 @@ function updateActionBar() {
         : formatString(
             translate("actions.conf_us_passive", currentLang) ||
               `${activeName} is typing the right code...`,
-            { name: activeName }
+            { name: activeName },
           ),
       them:
         translate("actions.conf_us_them", currentLang) ||
@@ -582,7 +579,7 @@ function updateActionBar() {
         ? formatString(
             translate("actions.guess_them_active_them", currentLang) ||
               `Guess Team ${myTeam === "A" ? "B" : "A"}'s words`,
-            { team: myTeam === "A" ? "B" : "A" }
+            { team: myTeam === "A" ? "B" : "A" },
           )
         : translate("actions.guess_them_passive_them", currentLang) ||
           "Teammates are guessing opponents clues",
@@ -674,7 +671,7 @@ function updateActionBar() {
 
   // Control opponent-inputs-container visibility
   const opponentContainer = document.querySelector(
-    ".opponent-inputs-container"
+    ".opponent-inputs-container",
   );
   if (opponentContainer) {
     const shouldShow = teamPhase === "guess_them" || teamPhase === "conf_them";
@@ -738,14 +735,11 @@ function initUI() {
   // Initialize collaborative inputs
   initCollaborativeInputs();
 
-  // Initialize clue word modal
-  initClueWordModal();
-
   // Initialize code modal
   const { openCodes, closeCodes } = initCodeModal(getSelectedRound());
   bindCodeButtons(
     () => showCodesInPlaceholders(getSelectedRound()),
-    hideCodesFromPlaceholders
+    hideCodesFromPlaceholders,
   );
 
   // Initialize logs modal
@@ -753,7 +747,7 @@ function initUI() {
 
   // Initialize round navigation
   initRoundNavigation((r) =>
-    selectRound(r, () => renderCodesModal(getSelectedRound()))
+    selectRound(r, () => renderCodesModal(getSelectedRound())),
   );
 
   // US / THEM navigation
@@ -792,11 +786,11 @@ function initUI() {
           console.error("[UI-CORE] Error setting words:", error);
           if (
             (gameManager.roomLanguage || gameManager.language || "").startsWith(
-              "en"
+              "en",
             )
           ) {
             alert(
-              `Failed to load English word list. Returning to lobby.\n${error?.message || ""}`
+              `Failed to load English word list. Returning to lobby.\n${error?.message || ""}`,
             );
             show("lobby");
           }
@@ -813,7 +807,7 @@ function initUI() {
       const store = window.sessionStorage || window.localStorage;
       store.removeItem(STORAGE.room);
       show("lobby");
-    })
+    }),
   );
 
   // Back to language picker
@@ -829,7 +823,7 @@ function initUI() {
       if (btnResetGlobal.__busy) return;
 
       const conferma = confirm(
-        "Resetta la partita? Verranno cancellati indizi, mapping e parole sostituite. Giocatori invariati."
+        "Resetta la partita? Verranno cancellati indizi, mapping e parole sostituite. Giocatori invariati.",
       );
       if (!conferma) return;
 
@@ -988,7 +982,7 @@ function initUI() {
           loadWordList(preloadLang());
         } catch (_) {}
       },
-      { timeout: 2000 }
+      { timeout: 2000 },
     );
   } else {
     setTimeout(() => {
