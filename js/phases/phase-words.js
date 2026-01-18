@@ -9,6 +9,7 @@ import { gameManager } from "../GameManager.js";
 const WORD_LIST_CACHE = {};
 let WORD_LIST = null;
 let CURRENT_LANG = null;
+let WORD_TRANSLATIONS = null;
 
 function parseWordText(txt) {
   return txt
@@ -20,8 +21,19 @@ function parseWordText(txt) {
         !l.startsWith("#") &&
         !/^<!?doctype/i.test(l) &&
         !/^<html/i.test(l) &&
-        !l.includes("<")
+        !l.includes("<"),
     );
+}
+
+async function loadWordTranslations() {
+  if (WORD_TRANSLATIONS) return WORD_TRANSLATIONS;
+  const res = await fetch("assets/i18n/wordlist_en_it.json", {
+    cache: "no-cache",
+    mode: "same-origin",
+  });
+  if (!res.ok) throw new Error("word translations fetch failed");
+  WORD_TRANSLATIONS = await res.json();
+  return WORD_TRANSLATIONS;
 }
 
 async function fetchWordlist(path) {
@@ -34,7 +46,7 @@ async function fetchWordlist(path) {
     });
     if (!res.ok)
       throw new Error(
-        `wordlist fetch failed (${res.status} ${res.statusText}): ${urlLike}`
+        `wordlist fetch failed (${res.status} ${res.statusText}): ${urlLike}`,
       );
     const txt = await res.text();
     const parsed = parseWordText(txt);
@@ -79,9 +91,23 @@ export async function loadWordList(lang) {
   }
 
   try {
-    const filename =
-      langKey === "eng" ? "wordlist-eng.txt" : "wordlist-ita.txt";
-    WORD_LIST = await fetchWordlist(filename);
+    if (langKey === "ita") {
+      try {
+        const translations = await loadWordTranslations();
+        const baseEng = await fetchWordlist("wordlist-eng.txt");
+        WORD_LIST = baseEng.map(
+          (w) => translations[w] || translations[w.toUpperCase()] || w,
+        );
+      } catch (mapErr) {
+        console.warn(
+          "word translation map failed, fallback to ita file",
+          mapErr,
+        );
+        WORD_LIST = await fetchWordlist("wordlist-ita.txt");
+      }
+    } else {
+      WORD_LIST = await fetchWordlist("wordlist-eng.txt");
+    }
     WORD_LIST_CACHE[langKey] = WORD_LIST;
     CURRENT_LANG = langKey;
   } catch (e) {
