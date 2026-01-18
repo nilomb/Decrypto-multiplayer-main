@@ -15,6 +15,7 @@ export function updateCluesDisplay(round) {
   const me = gameManager.players[gameManager.playerId];
   const myTeam = me?.team;
   if (!myTeam) return;
+  const isActive = gameManager.isActivePlayer();
 
   // Check if cluesData exists
   if (!gameManager.cluesData) return;
@@ -23,6 +24,7 @@ export function updateCluesDisplay(round) {
   const roundKey = `round_${displayRound}`;
 
   const cluesData = gameManager.cluesData[roundKey]?.[myTeam];
+  const teamPhase = gameManager.teamPhases?.[myTeam] || "lobby";
 
   // Populate own team clues in US view (read-only for non-active players)
   const usContainer = document.getElementById("view-us");
@@ -37,16 +39,17 @@ export function updateCluesDisplay(round) {
         }
       });
     } else {
-      // Clear all clue inputs when no data exists
-      clueInputs.forEach((input) => {
-        input.value = "";
-        input.removeAttribute("readonly");
-      });
+      // Do not wipe in-progress clues for the active player during clue entry
+      if (!(teamPhase === "clues" && isActive)) {
+        clueInputs.forEach((input) => {
+          input.value = "";
+          input.removeAttribute("readonly");
+        });
+      }
     }
   }
 
   // Populate opponent clues in THEM view
-  const teamPhase = gameManager.teamPhases?.[myTeam] || "lobby";
   if (teamPhase !== "lobby") {
     const otherTeam = myTeam === "A" ? "B" : "A";
     const otherCluesData = gameManager.cluesData[roundKey]?.[otherTeam];
@@ -200,7 +203,7 @@ export function updateCluesDisplay(round) {
       const usContainer = document.getElementById("view-us");
       if (usContainer) {
         const opponentCluewordInputs = usContainer.querySelectorAll(
-          ".opponent-clueword-input"
+          ".opponent-clueword-input",
         );
         otherCluesData.clues.forEach((clue, idx) => {
           if (opponentCluewordInputs[idx]) {
@@ -243,7 +246,7 @@ export function updateCluesDisplay(round) {
       const usContainer = document.getElementById("view-us");
       if (usContainer) {
         const opponentCluewordInputs = usContainer.querySelectorAll(
-          ".opponent-clueword-input"
+          ".opponent-clueword-input",
         );
         opponentCluewordInputs.forEach((input) => {
           input.value = "";
@@ -316,7 +319,7 @@ export function updateGuessesDisplay(round) {
   // Disable submit button if any player has complete guess
   const hasCompleteGuess = playerIds.some(
     (pid) =>
-      guesses[pid] && Array.isArray(guesses[pid]) && guesses[pid].length === 3
+      guesses[pid] && Array.isArray(guesses[pid]) && guesses[pid].length === 3,
   );
 
   if (hasCompleteGuess) {

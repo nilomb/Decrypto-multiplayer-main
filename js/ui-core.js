@@ -477,11 +477,22 @@ function updateActionBar() {
   const activeName = activeId ? gameManager.players[activeId]?.name : "Someone";
   const otherTeam = myTeam === "A" ? "B" : "A";
   const roundKey = `round_${selectedRound}`;
+  const opponentClues = gameManager.cluesData?.[roundKey]?.[otherTeam];
+  const hasOpponentClues =
+    opponentClues &&
+    Object.values(opponentClues).some((v) =>
+      typeof v === "string" ? v.trim().length > 0 : Boolean(v),
+    );
+  const opponentConf = gameManager.confData?.[roundKey]?.[otherTeam];
+  const hasOpponentConf =
+    Array.isArray(opponentConf) && opponentConf.length > 0;
 
   const myTGuesses =
     gameManager.tguessesData?.[roundKey]?.[`${myTeam}_about_${otherTeam}`];
   const hasMyTGuesses = Array.isArray(myTGuesses) && myTGuesses.length > 0;
   const allowSubmitGuessThem =
+    hasOpponentClues &&
+    hasOpponentConf &&
     (teamPhase === "guess_them" ||
       (teamPhase === "conf_them" && !hasMyTGuesses)) &&
     !hasMyTGuesses;
@@ -497,7 +508,14 @@ function updateActionBar() {
     btnSubmitConfUs: document.getElementById("btn-submit-conf-us"),
     btnSubmitConfThem: document.getElementById("btn-submit-conf-them"),
     btnSubmitTGuess: document.getElementById("btn-submit-tguess"),
+    btnNextRound: document.getElementById("btn-next-round"),
   };
+
+  const nextRoundLabel = elements.btnNextRound?.querySelector(".btn-label");
+  const bothTeamsInReview =
+    gameManager.teamPhases?.A === "review_round" &&
+    gameManager.teamPhases?.B === "review_round";
+  const targetRound = Math.min((gameManager.round || 1) + 1, TOTAL_ROUNDS);
 
   const buttons = [
     elements.btnSubmitClues,
@@ -505,6 +523,7 @@ function updateActionBar() {
     elements.btnSubmitConfUs,
     elements.btnSubmitConfThem,
     elements.btnSubmitTGuess,
+    elements.btnNextRound,
   ];
 
   const hideButtons = () =>
@@ -601,7 +620,7 @@ function updateActionBar() {
       them:
         translate("actions.review_round_them", currentLang) ||
         "Round complete! Review opponent's clues, then click next round",
-      buttons: [],
+      buttons: bothTeamsInReview ? [elements.btnNextRound] : [],
     },
   };
 
@@ -615,6 +634,15 @@ function updateActionBar() {
   };
 
   hideButtons();
+  if (elements.btnNextRound) {
+    elements.btnNextRound.classList.toggle(
+      "hidden",
+      !(bothTeamsInReview && teamPhase === "review_round"),
+    );
+    const noMoreRounds = (gameManager.round || 1) >= TOTAL_ROUNDS;
+    elements.btnNextRound.disabled = !gameManager.isCreator || noMoreRounds;
+    if (nextRoundLabel) nextRoundLabel.textContent = `Round ${targetRound}`;
+  }
   if (elements.actionTextUs) {
     elements.actionTextUs.textContent = phase.us;
     elements.actionTextUs.style.display = "block";
@@ -837,6 +865,16 @@ function initUI() {
         btnResetGlobal.disabled = false;
         btnResetGlobal.classList.remove("working");
       }
+    });
+  }
+
+  // Manual next round button (host only)
+  const btnNextRound = document.getElementById("btn-next-round");
+  if (btnNextRound && !btnNextRound.__bound) {
+    btnNextRound.__bound = true;
+    btnNextRound.addEventListener("click", () => {
+      if (btnNextRound.disabled) return;
+      gameManager.advanceToNextRound();
     });
   }
 

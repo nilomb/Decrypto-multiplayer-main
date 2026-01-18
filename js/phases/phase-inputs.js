@@ -53,6 +53,39 @@ function hasSentConf() {
 }
 
 /**
+ * Check if opponent clues for the current round are available
+ */
+function hasOpponentClues() {
+  const me = gameManager.players[gameManager.playerId];
+  const myTeam = me?.team;
+  if (!myTeam) return false;
+
+  const otherTeam = myTeam === "A" ? "B" : "A";
+  const roundKey = `round_${getSelectedRound?.() || gameManager.round}`;
+  const opponentClues = gameManager.cluesData?.[roundKey]?.[otherTeam];
+
+  if (!opponentClues) return false;
+  return Object.values(opponentClues).some((v) => {
+    if (typeof v === "string") return v.trim().length > 0;
+    return Boolean(v);
+  });
+}
+
+/**
+ * Check if opponent team has confirmed their own code (conf_us completed)
+ */
+function hasOpponentConf() {
+  const me = gameManager.players[gameManager.playerId];
+  const myTeam = me?.team;
+  if (!myTeam) return false;
+
+  const otherTeam = myTeam === "A" ? "B" : "A";
+  const roundKey = `round_${getSelectedRound?.() || gameManager.round}`;
+  const opponentConf = gameManager.confData?.[roundKey]?.[otherTeam];
+  return Array.isArray(opponentConf) && opponentConf.length > 0;
+}
+
+/**
  * Toggle input fields based on enabled state
  */
 function toggleInputs(selector, enable, container = document) {
@@ -246,7 +279,12 @@ export function updateClueInputs() {
     // Allow writing guesses when this round is in guess_them OR in conf_them but we haven't submitted our guess yet
     const isInGuessThem = teamPhase === "guess_them";
     const isInConfThem = teamPhase === "conf_them";
-    const allowGuessInputs = isInGuessThem || (isInConfThem && !hasMyTGuess); // allow backfill in conf_them if not sent
+    const opponentCluesReady = hasOpponentClues();
+    const opponentConfDone = hasOpponentConf();
+    const allowGuessInputs =
+      opponentCluesReady &&
+      opponentConfDone &&
+      (isInGuessThem || (isInConfThem && !hasMyTGuess)); // allow backfill in conf_them if not sent and only once clues + their conf are present
 
     const guessThem = themContainer.querySelectorAll(".guessthem-input");
     guessThem.forEach((inp) => {
@@ -283,7 +321,7 @@ export function updateClueInputs() {
  */
 export function clearAllInputs() {
   const allInputs = document.querySelectorAll(
-    "input[type='text'], input[type='number']"
+    "input[type='text'], input[type='number']",
   );
   allInputs.forEach((input) => {
     input.value = "";
@@ -413,7 +451,7 @@ function setupHintSystemForContainer(container) {
     if (!hintsContainer) {
       console.warn(
         "[HINT SYSTEM] No hints container found for panel",
-        panelNumber
+        panelNumber,
       );
       return;
     }

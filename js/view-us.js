@@ -98,7 +98,7 @@ if (usContainer) {
       <button id="btn-chat"><span class="icon"><img src="assets/imgs/chat.png" alt="Chat" /></span><span>Chat</span><span id="chat-unread-badge" class="unread-badge hidden">0</span></button>
       <button id="btn-room-id"><span class="icon"><img src="assets/imgs/id.png" alt="Room" /></span><span><span id="mini-room-id">----</span></span></button>
       <button id="btn-code" class="active-only"><span class="icon"><img src="assets/imgs/code.png" alt="Code" /></span><span>Code</span></button>
-      <button id="btn-end-turn" class="hidden"><span class="icon"><img src="assets/imgs/log.png" alt="End" /></span><span>Fine Turno</span></button>
+      <button id="btn-next-round" class="hidden host-only"><span class="icon"><img src="assets/imgs/log.png" alt="Next" /></span><span class="btn-label">Prossimo Round</span></button>
     </nav>
 
     <!-- Team Chat Overlay -->

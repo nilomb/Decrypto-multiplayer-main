@@ -101,7 +101,7 @@ class GameManager {
             // Tentativo di nuovo device / nuova tab: se il nome coincide con un player esistente permetti rejoin adottando il suo playerId
             const targetName = (this.playerName || "").toLowerCase();
             const matched = Object.entries(existingPlayers).find(
-              ([pid, p]) => (p.name || "").toLowerCase() === targetName
+              ([pid, p]) => (p.name || "").toLowerCase() === targetName,
             );
             if (matched) {
               const [adoptPid] = matched;
@@ -115,7 +115,7 @@ class GameManager {
               store.removeItem(STORAGE.room);
               try {
                 alert(
-                  "La partita è già iniziata: non è possibile entrare con un nome nuovo."
+                  "La partita è già iniziata: non è possibile entrare con un nome nuovo.",
                 );
               } catch (e) {}
               return;
@@ -132,7 +132,7 @@ class GameManager {
           const lowerTarget = this.playerName.toLowerCase();
           // Cerca player esistente con stesso nome (case-insensitive)
           const sameNameEntry = Object.entries(existingPlayers).find(
-            ([pid, p]) => (p.name || "").toLowerCase() === lowerTarget
+            ([pid, p]) => (p.name || "").toLowerCase() === lowerTarget,
           );
           if (sameNameEntry) {
             const [existingPid, existingData] = sameNameEntry;
@@ -165,7 +165,7 @@ class GameManager {
           ) {
             try {
               alert(
-                `Sei già in partita come "${remoteName}". Il nome inserito "${entered}" è stato ignorato.`
+                `Sei già in partita come "${remoteName}". Il nome inserito "${entered}" è stato ignorato.`,
               );
             } catch (e) {}
           }
@@ -198,7 +198,7 @@ class GameManager {
               } catch (e) {}
               console.warn(
                 "[JOIN-BLOCK] late join prevented for new name into",
-                r
+                r,
               );
             }
           }
@@ -402,10 +402,10 @@ class GameManager {
     const db = getDb();
     if (db && this.roomId) {
       db.ref(`rooms/${this.roomId}/state/roundPhases/${team}/${key}`).set(
-        phase
+        phase,
       );
       db.ref(`rooms/${this.roomId}/state/teamPhases/${team}`).set(
-        this.teamPhases[team]
+        this.teamPhases[team],
       );
     }
   }
@@ -420,12 +420,8 @@ class GameManager {
     const db = getDb();
     if (db && this.roomId) {
       db.ref(`rooms/${this.roomId}/state/unlockedRounds/${team}`).set(
-        nextRound
+        nextRound,
       );
-    }
-    // Se questo client è del team, passa automaticamente al prossimo round
-    if (this.getMyTeam() === team) {
-      this.setSelectedRound(nextRound);
     }
   }
 
@@ -527,7 +523,7 @@ class GameManager {
     if (!me || !me.team) return false;
     const team = me.team;
     db.ref(
-      `rooms/${this.roomId}/guesses/${roundKey}/${team}/${this.playerId}`
+      `rooms/${this.roomId}/guesses/${roundKey}/${team}/${this.playerId}`,
     ).set(guess);
     return true;
   }
@@ -555,7 +551,7 @@ class GameManager {
 
     console.log(
       `[SAVE CONF] Team ${myTeam} saved conf and tconf (${myTeam}_about_${myTeam}):`,
-      conf
+      conf,
     );
 
     return true;
@@ -659,7 +655,7 @@ class GameManager {
       } saving tconf about ${
         this.players[this.playerId]?.team === "A" ? "B" : "A"
       }:`,
-      tconf
+      tconf,
     );
     if (tconf.some((num, idx) => tconf.indexOf(num) !== idx)) {
       alert("Tconf must have unique numbers.");
@@ -714,7 +710,7 @@ class GameManager {
 
     // Update using the per-team path
     db.ref(
-      `rooms/${this.roomId}/hints/${roundKey}/${myTeam}/${hintKey}`
+      `rooms/${this.roomId}/hints/${roundKey}/${myTeam}/${hintKey}`,
     ).update({
       crossed: state.crossed,
     });
@@ -731,7 +727,7 @@ class GameManager {
 
     // Delete using the per-team path
     db.ref(
-      `rooms/${this.roomId}/hints/${roundKey}/${myTeam}/${hintKey}`
+      `rooms/${this.roomId}/hints/${roundKey}/${myTeam}/${hintKey}`,
     ).remove();
   }
 
@@ -747,7 +743,7 @@ class GameManager {
       "[START GAME] isCreator:",
       this.isCreator,
       "phase:",
-      this.phase
+      this.phase,
     );
 
     // Blocca se già in corso
@@ -795,7 +791,7 @@ class GameManager {
       "[START GAME] hasAllCodesA:",
       hasAllCodesA,
       "hasAllCodesB:",
-      hasAllCodesB
+      hasAllCodesB,
     );
 
     if (!hasAllCodesA || !hasAllCodesB) {
@@ -871,7 +867,7 @@ class GameManager {
               !l.startsWith("#") &&
               !/^<!?doctype/i.test(l) &&
               !/^<html/i.test(l) &&
-              !l.includes("<")
+              !l.includes("<"),
           );
 
       const fetchList = async (path) => {
@@ -948,7 +944,7 @@ class GameManager {
       B: { round_1: codeB1 },
     };
     console.log(
-      `[RESET GAME] Generated new codes for round_1 - A: ${codeA1}, B: ${codeB1}`
+      `[RESET GAME] Generated new codes for round_1 - A: ${codeA1}, B: ${codeB1}`,
     );
     db.ref().update(updates);
   }
@@ -1053,7 +1049,7 @@ class GameManager {
 
       if (attempts >= 100) {
         console.warn(
-          `[GENERATE CODES] Could not generate unique code for round ${round} after 100 attempts`
+          `[GENERATE CODES] Could not generate unique code for round ${round} after 100 attempts`,
         );
       }
 
@@ -1102,18 +1098,18 @@ class GameManager {
     };
     if (!validTransitions[currentPhase]?.includes(newPhase)) {
       console.warn(
-        `[ADVANCE BLOCKED] Cannot advance from ${currentPhase} to ${newPhase} on round ${round}`
+        `[ADVANCE BLOCKED] Cannot advance from ${currentPhase} to ${newPhase} on round ${round}`,
       );
       return;
     }
     console.log(
-      `[ADVANCE] Team ${team} from ${currentPhase} to ${newPhase} on round ${round}`
+      `[ADVANCE] Team ${team} from ${currentPhase} to ${newPhase} on round ${round}`,
     );
 
     // Ensure listeners are attached whenever phase changes
     if (!this._uiListeners || this._uiListeners.length === 0) {
       console.log(
-        "[PHASE CHANGE] No listeners detected, attempting to attach..."
+        "[PHASE CHANGE] No listeners detected, attempting to attach...",
       );
       setTimeout(() => {
         this._attachUIListeners();
@@ -1156,12 +1152,12 @@ class GameManager {
           } catch (e) {}
           console.warn(
             "[JOIN-BLOCK-LISTENER] prevented late new-name join for room",
-            r
+            r,
           );
           return; // evita emit per client non più valido
         }
         this._emit();
-      })
+      }),
     );
     // language
     this._listeners.push(
@@ -1174,7 +1170,7 @@ class GameManager {
           store.setItem(STORAGE.lang, lang);
         }
         this._emit();
-      })
+      }),
     );
     // teams
     this._listeners.push(
@@ -1186,7 +1182,7 @@ class GameManager {
         }
         if (this.phase !== "lobby") this._ensureActiveIntegrity();
         this._emit();
-      })
+      }),
     );
     // words
     this._listeners.push(
@@ -1195,7 +1191,7 @@ class GameManager {
         this.words.A = val.A || [];
         this.words.B = val.B || [];
         this._emit();
-      })
+      }),
     );
     // hints (all rounds)
     this._listeners.push(
@@ -1203,7 +1199,7 @@ class GameManager {
         const val = snap.val() || {};
         this.hints = val;
         this._emit();
-      })
+      }),
     );
     // state
     this._listeners.push(
@@ -1223,7 +1219,7 @@ class GameManager {
         // Dopo aver ricevuto nuovo stato, se la lista team è cambiata altrove, riallinea
         this._ensureActiveIntegrity();
         this._emit();
-      })
+      }),
     );
     // codes
     this._listeners.push(
@@ -1235,7 +1231,7 @@ class GameManager {
           this.codes.B = val.B || {};
         }
         this._emit();
-      })
+      }),
     );
     // clues
     this._listeners.push(
@@ -1254,7 +1250,7 @@ class GameManager {
           });
         });
         this._emit();
-      })
+      }),
     );
     // guesses
     this._listeners.push(
@@ -1268,7 +1264,7 @@ class GameManager {
             const teamGuesses = roundValue?.[team] || {};
             const teamMembers = this.teams[team] || [];
             const nonActiveMembers = teamMembers.filter(
-              (id) => id !== this.getActivePlayer(team, roundNumber)
+              (id) => id !== this.getActivePlayer(team, roundNumber),
             );
 
             if (
@@ -1291,7 +1287,7 @@ class GameManager {
           });
         });
         this._emit();
-      })
+      }),
     );
     // conf
     this._listeners.push(
@@ -1316,7 +1312,7 @@ class GameManager {
           });
         });
         this._emit();
-      })
+      }),
     );
 
     // tguesses (opponent guessing) - final submissions
@@ -1347,7 +1343,7 @@ class GameManager {
           });
         });
         this._emit();
-      })
+      }),
     );
 
     // Collaborative tguesses (live input)
@@ -1356,7 +1352,7 @@ class GameManager {
         const val = snap.val() || {};
         this.collabTGuessesData = val;
         this._emit();
-      })
+      }),
     );
 
     // Collaborative guess_us (live input)
@@ -1365,7 +1361,7 @@ class GameManager {
         const val = snap.val() || {};
         this.collabGuessUsData = val;
         this._emit();
-      })
+      }),
     );
 
     // Typing indicators
@@ -1374,7 +1370,7 @@ class GameManager {
         const val = snap.val() || {};
         this.typingIndicators = val;
         this._emit();
-      })
+      }),
     );
 
     // tconf (opponent confirmation)
@@ -1404,14 +1400,14 @@ class GameManager {
             phaseB === "conf_them"
           ) {
             console.log(
-              `[TCONF] Both teams completed - moving to review_round for round ${roundNumber}`
+              `[TCONF] Both teams completed - moving to review_round for round ${roundNumber}`,
             );
             this._setRoundPhase("A", roundNumber, "review_round");
             this._setRoundPhase("B", roundNumber, "review_round");
           }
         });
         this._emit();
-      })
+      }),
     );
 
     // Clue logs (for log page)
@@ -1420,7 +1416,7 @@ class GameManager {
         const val = snap.val() || {};
         this.clueLogs = val;
         this._emit();
-      })
+      }),
     );
   }
 
@@ -1455,7 +1451,7 @@ class GameManager {
 
     console.log(
       `[POPULATE TGUESS] Target team ${targetTeam} receives tguesses:`,
-      tguessValues
+      tguessValues,
     );
     this._emit();
   }
@@ -1483,7 +1479,7 @@ class GameManager {
       if (prevData !== newData) {
         console.log(
           "[MANUAL LISTENER] TGuesses data changed:",
-          this.tguessesData
+          this.tguessesData,
         );
         console.log("[MANUAL LISTENER] Calling UI update functions...");
 
@@ -1503,7 +1499,7 @@ class GameManager {
     console.log(
       "[MANUAL LISTENERS] Created " +
         this._uiListeners.length +
-        " manual listeners"
+        " manual listeners",
     );
   }
 
@@ -1518,14 +1514,14 @@ class GameManager {
         this.guessesData = snap.val() || {};
         // Call updateGuessInputs if defined (legacy UI fallback)
         if (typeof updateGuessInputs === "function") updateGuessInputs();
-      })
+      }),
     );
     // Listener for tguesses
     this._uiListeners.push(
       db.ref(`rooms/${this.roomId}/tguesses`).on("value", (snap) => {
         this.tguessesData = snap.val() || {};
         if (typeof updateGuessInputs === "function") updateGuessInputs();
-      })
+      }),
     );
     // Listener for collaborative tguesses
     // Removed: now handled within ui-core's onChange pipeline to ensure teams are loaded
@@ -1546,7 +1542,7 @@ class GameManager {
         this.typingIndicators = snap.val() || {};
         if (typeof updateTypingIndicators === "function")
           updateTypingIndicators();
-      })
+      }),
     );
     // Listener for teamPhases
     this._uiListeners.push(
@@ -1556,7 +1552,7 @@ class GameManager {
         this._syncTeamPhaseAlias(this.round);
         if (typeof updateGuessInputs === "function") updateGuessInputs();
         this._emit(); // Notify UI of teamPhases changes
-      })
+      }),
     );
   }
 
@@ -1572,7 +1568,7 @@ class GameManager {
       "playerId:",
       this.playerId,
       "creatorId:",
-      this.creatorId
+      this.creatorId,
     );
 
     // Guard: solo l'host può avanzare il round
@@ -1596,7 +1592,7 @@ class GameManager {
       console.log(
         "[ADVANCE ROUND] ❌ BLOCKED - Not in review_round (current phase: " +
           myPhase +
-          ")"
+          ")",
       );
       return;
     }
@@ -1621,7 +1617,7 @@ class GameManager {
     } else {
       // Nuovo round: entrambi i team ripartono da clues
       console.log(
-        `[ADVANCE ROUND] Moving to round ${nextRound}, setting both teams to clues`
+        `[ADVANCE ROUND] Moving to round ${nextRound}, setting both teams to clues`,
       );
 
       // Genera nuovi codici casuali per il prossimo round
@@ -1630,7 +1626,7 @@ class GameManager {
       const roundKey = `round_${nextRound}`;
 
       console.log(
-        `[ADVANCE ROUND] Generated new codes for ${roundKey} - A: ${codeA}, B: ${codeB}`
+        `[ADVANCE ROUND] Generated new codes for ${roundKey} - A: ${codeA}, B: ${codeB}`,
       );
 
       // Active player deterministico per round
@@ -1660,7 +1656,7 @@ class GameManager {
         .update(updates)
         .then(() => {
           console.log(
-            `[ADVANCE ROUND] Firebase updated successfully to round ${nextRound} with new codes and rotated active players`
+            `[ADVANCE ROUND] Firebase updated successfully to round ${nextRound} with new codes and rotated active players`,
           );
         })
         .catch((error) => {
