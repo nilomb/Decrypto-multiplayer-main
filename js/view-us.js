@@ -8,54 +8,56 @@ if (usContainer) {
     <div class="round-wrapper">
       <div class="round-container" id="us-round-container">
         <div class="round-screen" data-round="1">
-          <div class="top-box">
-            <div class="team-topbar">
-              <span id="team-badge" class="team-badge">A</span>
-              <span id="player-name-pill" class="player-name-pill">Player</span>
-              <span id="team-mates" class="team-mates">—</span>
-              <div id="phase-status-us" class="phase-status">lobby</div>
-            </div>
-            <div class="nav-row">
-              <div class="round-switch" id="us-round-switch" data-name="rounds">
-                <button data-round="1" class="active">1</button><button data-round="2">2</button><button data-round="3">3</button><button data-round="4">4</button><button data-round="5">5</button><button data-round="6">6</button><button data-round="7">7</button><button data-round="8">8</button>
+          <div class="top-area">
+            <div class="top-box">
+              <div class="team-topbar">
+                <span id="team-badge" class="team-badge">A</span>
+                <span id="player-name-pill" class="player-name-pill">Player</span>
+                <span id="team-mates" class="team-mates">—</span>
+                <div id="phase-status-us" class="phase-status">lobby</div>
               </div>
-              <div class="mode-nav">
-                <button class="active" id="btn-nav-us">US</button><button id="btn-nav-them">THEM</button>
-              </div>
-            </div>
-            <!-- Clues and guessing section -->
-            <div class="clues-section">
-              <div class="clues-container">
-                <!-- Our clue rows -->
-                <div class="row" id="clue1" data-clue-row="1">
-                  <input type="text" placeholder="" id="clueword1" class="clue-input" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess1" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf1" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess1" placeholder="" />
+              <div class="nav-row">
+                <div class="round-switch" id="us-round-switch" data-name="rounds">
+                  <button data-round="1" class="active">1</button><button data-round="2">2</button><button data-round="3">3</button><button data-round="4">4</button><button data-round="5">5</button><button data-round="6">6</button><button data-round="7">7</button><button data-round="8">8</button>
                 </div>
-                <div class="row" id="clue2" data-clue-row="2">
-                  <input type="text" placeholder="" id="clueword2" class="clue-input" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess2" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf2" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess2" placeholder="" />
-                </div>
-                <div class="row" id="clue3" data-clue-row="3">
-                  <input type="text" placeholder="" id="clueword3" class="clue-input" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess3" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf3" placeholder="" />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess3" placeholder="" />
+                <div class="mode-nav">
+                  <button class="active" id="btn-nav-us">US</button><button id="btn-nav-them">THEM</button>
                 </div>
               </div>
+              <!-- Clues and guessing section -->
+              <div class="clues-section">
+                <div class="clues-container">
+                  <!-- Our clue rows -->
+                  <div class="row" id="clue1" data-clue-row="1">
+                    <input type="text" placeholder="" id="clueword1" class="clue-input" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess1" placeholder="" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf1" placeholder="" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess1" placeholder="" />
+                  </div>
+                  <div class="row" id="clue2" data-clue-row="2">
+                    <input type="text" placeholder="" id="clueword2" class="clue-input" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess2" placeholder="" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf2" placeholder="" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess2" placeholder="" />
+                  </div>
+                  <div class="row" id="clue3" data-clue-row="3">
+                    <input type="text" placeholder="" id="clueword3" class="clue-input" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number guess-input" id="guess3" placeholder="" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number conf-input" id="conf3" placeholder="" />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number tguess-input active-only" id="tguess3" placeholder="" />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <!-- Action Bar -->
-          <div class="action-bar" id="action-bar-us">
-            <span id="action-text-us">Send Clues</span>
-            <div class="action-buttons">
-              <button id="btn-submit-clues" style="display: inline;">Send</button>
-              <button id="btn-submit-guess" style="display: none;">Send Guess</button>
-              <button id="btn-submit-conf-us" class="conf-btn" style="display:none;">Team Confirm</button>
-              <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Send</button>
+            <!-- Action Bar -->
+            <div class="action-bar" id="action-bar-us">
+              <span id="action-text-us">Send Clues</span>
+              <div class="action-buttons">
+                <button id="btn-submit-clues" style="display: inline;">Send</button>
+                <button id="btn-submit-guess" style="display: none;">Send Guess</button>
+                <button id="btn-submit-conf-us" class="conf-btn" style="display:none;">Team Confirm</button>
+                <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Send</button>
+              </div>
             </div>
           </div>
           <!-- US Panels (layout placeholder - content removed) -->

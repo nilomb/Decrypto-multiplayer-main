@@ -7,52 +7,54 @@ if (themMount) {
     <div class="round-wrapper">
       <div class="round-container" id="them-round-container">
         <div class="round-screen" data-round="1">
-          <div class="top-box">
-            <div class="team-topbar">
-              <span id="team-badge-them" class="team-badge">T</span>
-              <span id="player-name-pill-them" class="player-name-pill">Player</span>
-              <span id="team-mates-them" class="team-mates">—</span>
-              <div id="phase-status-them" class="phase-status">lobby</div>
-            </div>
-            <div class="nav-row">
-              <div class="round-switch" id="them-round-switch" data-name="rounds">
-                <button data-round="1" class="active">1</button><button data-round="2">2</button><button data-round="3">3</button><button data-round="4">4</button><button data-round="5">5</button><button data-round="6">6</button><button data-round="7">7</button><button data-round="8">8</button>
+          <div class="top-area">
+            <div class="top-box">
+              <div class="team-topbar">
+                <span id="team-badge-them" class="team-badge">T</span>
+                <span id="player-name-pill-them" class="player-name-pill">Player</span>
+                <span id="team-mates-them" class="team-mates">—</span>
+                <div id="phase-status-them" class="phase-status">lobby</div>
               </div>
-              <div class="mode-nav">
-                <button id="btn-nav-us2">US</button><button class="active" id="btn-nav-them2">THEM</button>
-              </div>
-            </div>
-            <!-- Clues and guessing section -->
-            <div class="clues-section">
-              <div class="clues-container">
-                <!-- Their clue rows (readonly) -->
-                <div class="row" id="clue1-them" data-clue-row="1">
-                  <input type="text" placeholder="" id="clueword1-them" class="clueword-input" readonly />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number guessthem-input" id="guessthem1" placeholder="" />
-
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number confthem-input" id="confthem1" placeholder="" />
+              <div class="nav-row">
+                <div class="round-switch" id="them-round-switch" data-name="rounds">
+                  <button data-round="1" class="active">1</button><button data-round="2">2</button><button data-round="3">3</button><button data-round="4">4</button><button data-round="5">5</button><button data-round="6">6</button><button data-round="7">7</button><button data-round="8">8</button>
                 </div>
-                <div class="row" id="clue2-them" data-clue-row="2">
-                  <input type="text" placeholder="" id="clueword2-them" class="clueword-input" readonly />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number guessthem-input" id="guessthem2" placeholder="" />
-
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number confthem-input" id="confthem2" placeholder="" />
-                </div>
-                <div class="row" id="clue3-them" data-clue-row="3">
-                  <input type="text" placeholder="" id="clueword3-them" class="clueword-input" readonly />
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number guessthem-input" id="guessthem3" placeholder="" />
-
-                  <input type="number" min="1" max="4" inputmode="numeric" class="map-number confthem-input" id="confthem3" placeholder="" />
+                <div class="mode-nav">
+                  <button id="btn-nav-us2">US</button><button class="active" id="btn-nav-them2">THEM</button>
                 </div>
               </div>
+              <!-- Clues and guessing section -->
+              <div class="clues-section">
+                <div class="clues-container">
+                  <!-- Their clue rows (readonly) -->
+                  <div class="row" id="clue1-them" data-clue-row="1">
+                    <input type="text" placeholder="" id="clueword1-them" class="clueword-input" readonly />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number guessthem-input" id="guessthem1" placeholder="" />
+
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number confthem-input" id="confthem1" placeholder="" />
+                  </div>
+                  <div class="row" id="clue2-them" data-clue-row="2">
+                    <input type="text" placeholder="" id="clueword2-them" class="clueword-input" readonly />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number guessthem-input" id="guessthem2" placeholder="" />
+
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number confthem-input" id="confthem2" placeholder="" />
+                  </div>
+                  <div class="row" id="clue3-them" data-clue-row="3">
+                    <input type="text" placeholder="" id="clueword3-them" class="clueword-input" readonly />
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number guessthem-input" id="guessthem3" placeholder="" />
+
+                    <input type="number" min="1" max="4" inputmode="numeric" class="map-number confthem-input" id="confthem3" placeholder="" />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          <!-- Action Bar -->
-          <div class="action-bar" id="action-bar-them">
-            <span id="action-text-them">Waiting for opponents clues</span>
-            <div class="action-buttons">
-              <button id="btn-submit-tguess" style="display: none;">Send Guess</button>
-              <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Send</button>
+            <!-- Action Bar -->
+            <div class="action-bar" id="action-bar-them">
+              <span id="action-text-them">Waiting for opponents clues</span>
+              <div class="action-buttons">
+                <button id="btn-submit-tguess" style="display: none;">Send Guess</button>
+                <button id="btn-submit-conf-them" class="conf-btn" style="display:none;">Send</button>
+              </div>
             </div>
           </div>
           <div class="grid" id="them-panels">

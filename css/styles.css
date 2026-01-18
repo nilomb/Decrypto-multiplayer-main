@@ -4,6 +4,7 @@
   --accent: #111;
   --accent2: #444;
   --danger: #b40000;
+  --bottom-bar-h: 60px;
 }
 
 * {
@@ -69,7 +70,7 @@ button {
   max-width: 460px;
   margin: 0 auto;
   padding: 28px 22px 120px;
-  min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -79,8 +80,7 @@ button {
 
 .view.us-layout {
   padding: 0;
-  height: 100vh;
-  height: 100dvh;
+  height: calc(var(--vh, 1vh) * 100);
   max-width: none;
   overflow: hidden;
 }
@@ -410,6 +410,7 @@ nav.bottom-bar {
   display: flex;
   align-items: center;
   justify-content: space-around;
+  z-index: 10;
 }
 
 nav.bottom-bar button {
@@ -426,7 +427,7 @@ nav.bottom-bar button {
 }
 
 .us-layout .bottom-bar.alt-bottom-bar {
-  height: 60px;
+  height: var(--bottom-bar-h);
 }
 
 .us-layout .bottom-bar .icon img {
@@ -444,6 +445,12 @@ nav.bottom-bar button {
   /*margin-bottom: 8px;*/
   border-radius: 8px;
   flex-shrink: 0;
+}
+
+.us-layout .top-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 body.them .us-layout .top-box {
@@ -479,9 +486,10 @@ body.them .us-layout .top-box {
   width: 100%;
   height: 100%;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto 1fr;
+  row-gap: 8px;
+  padding-bottom: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom));
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -694,15 +702,13 @@ body.them .us-layout .top-box {
 /* Panel grid */
 .us-layout .grid,
 .grid {
-  flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 8px;
   padding: 8px;
   box-sizing: border-box;
-  overflow: hidden;
-  height: 0;
+  overflow: auto;
   min-height: 0;
 }
 
@@ -1321,7 +1327,7 @@ body.them .us-layout .top-box {
 @media (max-height: 720px) {
   .view.us-layout {
     overflow-y: auto;
-    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
   }
 
   nav.bottom-bar {
