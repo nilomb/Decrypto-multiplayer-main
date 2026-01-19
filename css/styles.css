@@ -5,6 +5,15 @@
   --accent2: #444;
   --danger: #b40000;
   --bottom-bar-h: 60px;
+
+  /* Safe viewport height for mobile browsers with dynamic bars */
+  --safe-vh: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --safe-vh: 100dvh;
+  }
 }
 
 * {
@@ -80,9 +89,12 @@ button {
 
 .view.us-layout {
   padding: 0;
-  height: calc(var(--vh, 1vh) * 100);
+  height: var(--safe-vh);
+  min-height: var(--safe-vh);
   max-width: none;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 /* Typography */
 h1 {
@@ -450,7 +462,8 @@ nav.bottom-bar button {
 .us-layout .top-area {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  /* gap: 8px; */
+  flex-shrink: 0;
 }
 
 body.them .us-layout .top-box {
@@ -470,15 +483,19 @@ body.them .us-layout .top-box {
 }
 
 .us-layout .round-wrapper {
-  flex: 1;
+  flex: 1 1 auto;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .us-layout .round-container {
   display: flex;
   width: 100%;
   height: 100%;
+  min-height: 0;
   transition: transform 0.3s ease;
 }
 
@@ -486,12 +503,13 @@ body.them .us-layout .top-box {
   width: 100%;
   height: 100%;
   flex-shrink: 0;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  row-gap: 8px;
+  display: flex;
+  flex-direction: column;
+  /* gap: 8px; */
   padding-bottom: calc(var(--bottom-bar-h) + env(safe-area-inset-bottom));
   box-sizing: border-box;
   overflow: hidden;
+  min-height: 0;
 }
 
 .us-layout .nav-row {
@@ -703,13 +721,14 @@ body.them .us-layout .top-box {
 .us-layout .grid,
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 8px;
   box-sizing: border-box;
   overflow: auto;
   min-height: 0;
+  flex: 1 1 auto;
 }
 
 .us-layout .panel,
@@ -805,7 +824,7 @@ body.them .us-layout .top-box {
   padding: 4px;
   background: #fafafa;
   max-height: 112px;
-  overflow-y: auto;
+  /* overflow-y: auto; */
   text-align: center;
   font-weight: 500;
   font-size: 16px;
@@ -1328,8 +1347,8 @@ body.them .us-layout .top-box {
 /* Compact layout for short screens: keep bottom bar visible and shrink panels */
 @media (max-height: 720px) {
   .view.us-layout {
-    overflow-y: auto;
-    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    overflow: hidden;
+    /* padding-bottom: calc(90px + env(safe-area-inset-bottom)); */
   }
 
   nav.bottom-bar {
@@ -1344,9 +1363,11 @@ body.them .us-layout .top-box {
   .grid {
     gap: 4px;
     padding: 6px;
-    height: auto;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    flex: 1 1 auto;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    /* grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); */
   }
 
   .us-layout .panel-top {
@@ -1438,7 +1459,7 @@ body.them .us-layout .top-box {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 4px 20px;
+  padding: 2px 20px;
   background: #f0f0f0;
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
