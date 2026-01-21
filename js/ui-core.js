@@ -8,8 +8,6 @@ import { gameManager } from "./GameManager.js";
 import { ensureFirebaseReady, getDb } from "./firebase-init.js";
 import { teamChat } from "./TeamChat.js";
 import { opponentChat } from "./OpponentChat.js";
-
-// Phase modules
 import { initLobbyPhase, updateRoomLobby } from "./phases/phase-lobby.js";
 import {
   updateClueInputs,
@@ -471,10 +469,12 @@ function updateActionBar() {
   if (!myTeam) return;
 
   const selectedRound = getSelectedRound?.() || gameManager.round || 1;
+  const currentRound = gameManager.getUnlockedRound(myTeam) || 1;
   const teamPhase = gameManager.getRoundPhase(myTeam, selectedRound);
   const isActive = gameManager.isActivePlayer();
   const activeId = gameManager.getActivePlayer(myTeam, selectedRound);
   const activeName = activeId ? gameManager.players[activeId]?.name : "Someone";
+  const viewingCurrentRound = selectedRound === currentRound;
   const otherTeam = myTeam === "A" ? "B" : "A";
   const roundKey = `round_${selectedRound}`;
   const opponentClues = gameManager.cluesData?.[roundKey]?.[otherTeam];
@@ -515,7 +515,7 @@ function updateActionBar() {
   const bothTeamsInReview =
     gameManager.teamPhases?.A === "review_round" &&
     gameManager.teamPhases?.B === "review_round";
-  const targetRound = Math.min((gameManager.round || 1) + 1, TOTAL_ROUNDS);
+  const targetRound = Math.min(currentRound + 1, TOTAL_ROUNDS);
 
   const buttons = [
     elements.btnSubmitClues,
@@ -620,7 +620,7 @@ function updateActionBar() {
       them:
         translate("actions.review_round_them", currentLang) ||
         "Round complete! Review opponent's clues, then click next round",
-      buttons: bothTeamsInReview ? [elements.btnNextRound] : [],
+      buttons: [], // Next round button handled separately to respect viewingCurrentRound
     },
   };
 
@@ -635,13 +635,20 @@ function updateActionBar() {
 
   hideButtons();
   if (elements.btnNextRound) {
-    elements.btnNextRound.classList.toggle(
-      "hidden",
-      !(bothTeamsInReview && teamPhase === "review_round"),
-    );
-    const noMoreRounds = (gameManager.round || 1) >= TOTAL_ROUNDS;
-    elements.btnNextRound.disabled = !gameManager.isCreator || noMoreRounds;
-    if (nextRoundLabel) nextRoundLabel.textContent = `Round ${targetRound}`;
+    const noMoreRounds = currentRound >= TOTAL_ROUNDS;
+    const showNextRound =
+      viewingCurrentRound &&
+      bothTeamsInReview &&
+      teamPhase === "review_round" &&
+      !noMoreRounds;
+
+    elements.btnNextRound.classList.toggle("hidden", !showNextRound);
+    elements.btnNextRound.style.display = showNextRound ? "inline" : "none";
+    elements.btnNextRound.disabled =
+      !gameManager.isCreator || noMoreRounds || !viewingCurrentRound;
+    if (showNextRound && nextRoundLabel) {
+      nextRoundLabel.textContent = `Round ${targetRound}`;
+    }
   }
   if (elements.actionTextUs) {
     elements.actionTextUs.textContent = phase.us;
@@ -654,17 +661,6 @@ function updateActionBar() {
     elements.actionTextThem.classList.remove("hidden");
   }
   phase.buttons.forEach((btn) => showButton(btn));
-
-  // Debug visibility for conf_them button
-  if (elements.btnSubmitConfThem) {
-    console.log("[UI] conf_them button state", {
-      selectedRound,
-      teamPhase,
-      display: elements.btnSubmitConfThem.style.display,
-      disabled: elements.btnSubmitConfThem.disabled,
-      classList: [...elements.btnSubmitConfThem.classList],
-    });
-  }
 
   // Keep conf buttons visibility in sync even if previous phases hid them
   // Use our submitted tguesses (myTeam_about_otherTeam) when gating conf_them
@@ -880,6 +876,7 @@ function initUI() {
 
   // Track last round to detect round changes
   let lastRound = gameManager.round;
+  let maxRoundReached = gameManager.round; // Track the highest round ever reached
   let lastPhase = { A: null, B: null };
 
   // GameManager onChange handler
@@ -888,15 +885,21 @@ function initUI() {
     const myPhase = gameManager.teamPhases?.[myTeam];
 
     // Check for review_round phase -> switch to THEM view and populate panels
-    if (myPhase === "review_round" && lastPhase[myTeam] !== "review_round") {
+    // Only do this when entering review_round in the CURRENT game round, not when viewing past rounds
+    if (
+      myPhase === "review_round" &&
+      lastPhase[myTeam] !== "review_round" &&
+      gameManager.round === lastRound
+    ) {
       lastPhase[myTeam] = "review_round";
 
       // Switch to THEM view to show opponent's clues
       switchView("them");
 
       // Force update of displays to populate THEM panels with opponent clues
-      updateCluesDisplay();
-      updateTGuessesDisplay();
+      // Pass current round to ensure correct round data is displayed
+      updateCluesDisplay(gameManager.round);
+      updateTGuessesDisplay(gameManager.round);
     }
 
     // Check if both teams are in review_round -> enable next round button
@@ -927,7 +930,14 @@ function initUI() {
 
     // Check for round change
     if (gameManager.round !== lastRound) {
+      const isNewRoundForFirstTime = gameManager.round > maxRoundReached;
+
       lastRound = gameManager.round;
+
+      // Update max round reached
+      if (gameManager.round > maxRoundReached) {
+        maxRoundReached = gameManager.round;
+      }
 
       // Restore normal selectRound handlers on round switch buttons
       restoreRoundSwitchHandlers(selectRound);
@@ -935,8 +945,10 @@ function initUI() {
       // Update selected round UI to match new game round (after handlers are restored)
       selectRound(gameManager.round);
 
-      // Switch to US view for the new round and re-enable numeric validation
-      switchView("us");
+      // Switch to US view ONLY when entering a brand new round for the first time
+      if (isNewRoundForFirstTime) {
+        switchView("us");
+      }
 
       // Clear all clue, guess, conf, tguess, and tconf inputs for the new round
       resetInputs([

@@ -45,13 +45,6 @@ export function initConfThemPhase(showToast, updateClueInputs) {
       return;
     }
 
-    console.log("[TCONF][SEND]", {
-      round,
-      team: myTeam,
-      about: otherTeam,
-      code: tconfs,
-    });
-
     showToast("TConf inviati.");
     setTimeout(() => updateClueInputs(), 100);
 

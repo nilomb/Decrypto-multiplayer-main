@@ -110,12 +110,21 @@ export function updateClueInputs() {
   const myTeam = me?.team;
   const isActive = gameManager.isActivePlayer();
   const selectedRound = getSelectedRound?.() || gameManager.round || 1;
+  const isRoundOne = selectedRound === 1;
   const teamPhase = gameManager.getRoundPhase(myTeam, selectedRound);
   const otherTeam = myTeam === "A" ? "B" : "A";
   const roundKey = `round_${selectedRound}`;
   const myTGuess =
     gameManager.tguessesData?.[roundKey]?.[`${myTeam}_about_${otherTeam}`];
   const hasMyTGuess = Array.isArray(myTGuess) && myTGuess.length > 0;
+  const hasTGuesses = hasMyTGuess; // use our submitted tguesses for gating conf_them
+  const opponentCodeDigits = (gameManager.codes?.[otherTeam]?.[roundKey] || "")
+    .toString()
+    .replace(/\D/g, "")
+    .split("")
+    .map((d) => parseInt(d, 10))
+    .filter((n) => Number.isFinite(n))
+    .slice(0, 3);
 
   const enables = {
     clues: isActive && teamPhase === "clues",
@@ -191,20 +200,6 @@ export function updateClueInputs() {
         break;
       }
       case "conf_us": {
-        // Active: numbers received + code visible, all gray; others: numbers visible, code hidden until sent
-        if (confAlreadySent || isActive) {
-          confInputs.forEach((inp, idx) => {
-            if (codeDigits[idx] !== undefined) inp.value = codeDigits[idx];
-          });
-        }
-        break;
-      }
-      case "guess_them": {
-        // All gray, non editable
-        break;
-      }
-      case "conf_them": {
-        // All gray; code shown only if already sent
         if (confAlreadySent || isActive) {
           confInputs.forEach((inp, idx) => {
             if (codeDigits[idx] !== undefined) inp.value = codeDigits[idx];
@@ -234,7 +229,6 @@ export function updateClueInputs() {
       });
     }
 
-    const hasTGuesses = hasMyTGuess; // use our submitted tguesses for gating conf_them
     const btnSubmitConfUs = document.getElementById("btn-submit-conf-us");
     if (btnSubmitConfUs) {
       const show = teamPhase === "conf_us";
@@ -250,7 +244,7 @@ export function updateClueInputs() {
 
     const btnSubmitConfThem = document.getElementById("btn-submit-conf-them");
     if (btnSubmitConfThem) {
-      const show = teamPhase === "conf_them";
+      const show = teamPhase === "conf_them" && !isRoundOne; // round 1 auto-handled
       btnSubmitConfThem.style.display = show ? "inline-block" : "none";
       let tconfAlreadySent = false;
       if (show) {
@@ -259,18 +253,6 @@ export function updateClueInputs() {
         btnSubmitConfThem.disabled = disabled;
         btnSubmitConfThem.classList.toggle("disabled-clue", disabled);
       }
-
-      console.log("[INPUTS] btn-submit-conf-them", {
-        selectedRound,
-        teamPhase,
-        show,
-        isActive,
-        hasTGuesses,
-        tconfAlreadySent,
-        disabled: btnSubmitConfThem.disabled,
-        classList: [...btnSubmitConfThem.classList],
-        display: btnSubmitConfThem.style.display,
-      });
     }
   }
 
@@ -279,6 +261,11 @@ export function updateClueInputs() {
     // Allow writing guesses when this round is in guess_them OR in conf_them but we haven't submitted our guess yet
     const isInGuessThem = teamPhase === "guess_them";
     const isInConfThem = teamPhase === "conf_them";
+    const showThemData =
+      isInGuessThem ||
+      isInConfThem ||
+      teamPhase === "review_round" ||
+      selectedRound < (gameManager.round || 1); // Show for review and past rounds
     const opponentCluesReady = hasOpponentClues();
     const opponentConfDone = hasOpponentConf();
     const allowGuessInputs =
@@ -286,14 +273,28 @@ export function updateClueInputs() {
       opponentConfDone &&
       (isInGuessThem || (isInConfThem && !hasMyTGuess)); // allow backfill in conf_them if not sent and only once clues + their conf are present
 
-    const guessThem = themContainer.querySelectorAll(".guessthem-input");
-    guessThem.forEach((inp) => {
+    const guessthemInputs = themContainer.querySelectorAll(".guessthem-input");
+    guessthemInputs.forEach((inp) => {
+      // Hide in round 1, always show from round 2 onwards
+      if (isRoundOne) {
+        inp.value = "";
+        inp.style.display = "none";
+        return;
+      }
+
+      inp.style.display = "";
+
       if (allowGuessInputs) {
         inp.removeAttribute("disabled");
         inp.removeAttribute("readonly");
         inp.classList.remove("disabled-clue");
         inp.style.backgroundColor = "#fff";
       } else {
+        // When not in guess phase or clues not ready, clear and disable
+        // Only clear if we haven't submitted our tguess for this round
+        if (!hasMyTGuess) {
+          inp.value = "";
+        }
         inp.setAttribute("readonly", "readonly");
         inp.classList.add("disabled-clue");
         inp.removeAttribute("disabled");
@@ -303,13 +304,49 @@ export function updateClueInputs() {
 
     // confthem inputs: writable ONLY when active in conf_them
     const confThem = themContainer.querySelectorAll(".confthem-input");
-    confThem.forEach((inp) => {
-      // Always readonly; show gray background
+    confThem.forEach((inp, idx) => {
+      // Always readonly; show gray background; in round 1 we already set values
+      if (!showThemData) {
+        inp.value = "";
+        inp.style.display = "";
+        inp.setAttribute("readonly", "readonly");
+        inp.classList.add("disabled-clue");
+        inp.removeAttribute("disabled");
+        inp.style.backgroundColor = "#eee";
+        return;
+      }
+
+      if (isRoundOne) {
+        inp.value = opponentCodeDigits[idx] ?? "";
+      } else if (hasTGuesses || hasSentTConf()) {
+        // Show submitted guesses/confirmations when available
+        const myTConf =
+          gameManager.tconfData?.[roundKey]?.[`${myTeam}_about_${otherTeam}`];
+        const digits = Array.isArray(myTConf) ? myTConf : myTGuess;
+        if (Array.isArray(digits) && digits[idx] !== undefined) {
+          inp.value = digits[idx];
+        } else {
+          inp.value = ""; // Clear if no data for this index
+        }
+      } else {
+        // Clear confthem when no tguess or tconf data for this round
+        inp.value = "";
+      }
+
       inp.setAttribute("readonly", "readonly");
       inp.classList.add("disabled-clue");
       inp.removeAttribute("disabled");
       inp.style.backgroundColor = "#eee";
+      inp.style.display = "";
     });
+
+    // Clue text on THEM page: keep empty until conf_them
+    const cluewordInputs = themContainer.querySelectorAll(".clueword-input");
+    if (!showThemData) {
+      cluewordInputs.forEach((inp) => {
+        inp.value = "";
+      });
+    }
   }
 
   // Update hint inputs based on current phase
@@ -529,13 +566,9 @@ function renderHintFromData(hintsContainer, hintData, hintKey, panelNumber) {
 }
 
 function addHintToPanel(container, text, panelNumber) {
-  console.log("[ADD HINT] Adding hint:", text, "to panel:", panelNumber);
-
   // Just save to Firebase - let the listener re-render for everyone
   // This ensures all team members see it at the same time via Firebase
   gameManager.addHint(text, panelNumber);
-
-  console.log("[ADD HINT] Hint saved to Firebase, listener will re-render");
 }
 
 function escapeHtml(text) {

@@ -549,11 +549,6 @@ class GameManager {
     const tconfPath = `rooms/${this.roomId}/tconf/${roundKey}/${myTeam}_about_${myTeam}`;
     db.ref(tconfPath).set(conf);
 
-    console.log(
-      `[SAVE CONF] Team ${myTeam} saved conf and tconf (${myTeam}_about_${myTeam}):`,
-      conf,
-    );
-
     return true;
   }
 
@@ -649,14 +644,6 @@ class GameManager {
   }
 
   saveTConf(tconf, roundOverride) {
-    console.log(
-      `[SAVE TCONF] Team ${
-        this.players[this.playerId]?.team
-      } saving tconf about ${
-        this.players[this.playerId]?.team === "A" ? "B" : "A"
-      }:`,
-      tconf,
-    );
     if (tconf.some((num, idx) => tconf.indexOf(num) !== idx)) {
       alert("Tconf must have unique numbers.");
       return false;
@@ -738,23 +725,13 @@ class GameManager {
   }
 
   startGame() {
-    console.log("[START GAME] startGame() called");
-    console.log(
-      "[START GAME] isCreator:",
-      this.isCreator,
-      "phase:",
-      this.phase,
-    );
-
     // Blocca se già in corso
     if (this._startGameInProgress) {
-      console.log("[START GAME] ❌ BLOCKED - startGame already in progress");
       return;
     }
 
     // Solo il creatore può avviare; evita ri-avvio
     if (!this.isCreator || this.phase !== "lobby") {
-      console.log("[START GAME] ❌ BLOCKED - Not creator or not in lobby");
       return;
     }
 
@@ -762,14 +739,11 @@ class GameManager {
 
     const db = getDb();
     if (!db || !this.roomId) {
-      console.log("[START GAME] ❌ BLOCKED - No db or roomId");
       this._startGameInProgress = false;
       return;
     }
 
-    console.log("[START GAME] Teams:", this.teams);
     if (!(this.teams.A.length && this.teams.B.length)) {
-      console.log("[START GAME] ❌ BLOCKED - Teams not valid");
       this._startGameInProgress = false;
       try {
         alert("Ogni team deve avere almeno un giocatore.");
@@ -778,7 +752,6 @@ class GameManager {
     }
 
     // Genera codici per tutti gli 8 round se non già presenti
-    console.log("[START GAME] Current codes:", this.codes);
     const hasAllCodesA =
       this.codes.A &&
       typeof this.codes.A === "object" &&
@@ -787,30 +760,18 @@ class GameManager {
       this.codes.B &&
       typeof this.codes.B === "object" &&
       Object.keys(this.codes.B).length === TOTAL_ROUNDS;
-    console.log(
-      "[START GAME] hasAllCodesA:",
-      hasAllCodesA,
-      "hasAllCodesB:",
-      hasAllCodesB,
-    );
 
     if (!hasAllCodesA || !hasAllCodesB) {
-      console.log("[START GAME] Generating unique codes for all 8 rounds...");
       const codesA = this._generateUniqueCodesForTeam();
       const codesB = this._generateUniqueCodesForTeam();
-      console.log(`[START GAME] Generated codes for team A:`, codesA);
-      console.log(`[START GAME] Generated codes for team B:`, codesB);
       db.ref(`rooms/${this.roomId}/codes/A`).set(codesA);
       db.ref(`rooms/${this.roomId}/codes/B`).set(codesB);
-    } else {
-      console.log("[START GAME] All codes already exist, skipping generation");
     }
 
     const actives = {
       A: this.getActivePlayer("A", 1),
       B: this.getActivePlayer("B", 1),
     };
-    console.log("[START GAME] Setting active players:", actives);
     this.activePlayers = actives;
 
     // Reset per-round phases for a fresh start
@@ -818,7 +779,6 @@ class GameManager {
     this.unlockedRounds = this._defaultUnlockedRounds();
     this._syncTeamPhaseAlias(1);
 
-    console.log("[START GAME] Setting state to Firebase...");
     db.ref(`rooms/${this.roomId}/state`)
       .set({
         round: 1,
@@ -832,11 +792,9 @@ class GameManager {
         },
       })
       .then(() => {
-        console.log("[START GAME] ✓ State set successfully");
         this._startGameInProgress = false;
       })
       .catch((err) => {
-        console.log("[START GAME] ❌ Error setting state:", err);
         this._startGameInProgress = false;
       });
   }
@@ -943,9 +901,6 @@ class GameManager {
       A: { round_1: codeA1 },
       B: { round_1: codeB1 },
     };
-    console.log(
-      `[RESET GAME] Generated new codes for round_1 - A: ${codeA1}, B: ${codeB1}`,
-    );
     db.ref().update(updates);
   }
 
@@ -1097,24 +1052,14 @@ class GameManager {
       review_round: ["clues"],
     };
     if (!validTransitions[currentPhase]?.includes(newPhase)) {
-      console.warn(
-        `[ADVANCE BLOCKED] Cannot advance from ${currentPhase} to ${newPhase} on round ${round}`,
-      );
       return;
     }
-    console.log(
-      `[ADVANCE] Team ${team} from ${currentPhase} to ${newPhase} on round ${round}`,
-    );
 
     // Ensure listeners are attached whenever phase changes
     if (!this._uiListeners || this._uiListeners.length === 0) {
-      console.log(
-        "[PHASE CHANGE] No listeners detected, attempting to attach...",
-      );
       setTimeout(() => {
         this._attachUIListeners();
         if (!this._uiListeners || this._uiListeners.length === 0) {
-          console.log("[PHASE CHANGE] Creating manual listeners...");
           this._createManualListeners();
         }
       }, 100);
@@ -1297,6 +1242,54 @@ class GameManager {
         Object.entries(val).forEach(([roundKey, roundValue]) => {
           const roundNumber = parseInt(roundKey.split("_")[1], 10);
 
+          // Round 1 shortcut: skip guess_them/conf_them, go straight to review when both teams confirmed their own code
+          if (roundNumber === 1 && roundValue?.A && roundValue?.B) {
+            const dbUpdates = {};
+            const codeA = this.codes?.A?.[roundKey] || "";
+            const codeB = this.codes?.B?.[roundKey] || "";
+            const digitsA = codeA
+              .toString()
+              .replace(/\D/g, "")
+              .split("")
+              .map((d) => parseInt(d, 10))
+              .filter((n) => Number.isFinite(n))
+              .slice(0, 3);
+            const digitsB = codeB
+              .toString()
+              .replace(/\D/g, "")
+              .split("")
+              .map((d) => parseInt(d, 10))
+              .filter((n) => Number.isFinite(n))
+              .slice(0, 3);
+
+            // Pre-fill opponent guesses/confirmations so UI shows the provided code
+            dbUpdates[`rooms/${this.roomId}/tguesses/${roundKey}/A_about_B`] =
+              digitsA;
+            dbUpdates[`rooms/${this.roomId}/tguesses/${roundKey}/B_about_A`] =
+              digitsB;
+            dbUpdates[`rooms/${this.roomId}/tconf/${roundKey}/A_about_B`] =
+              digitsA;
+            dbUpdates[`rooms/${this.roomId}/tconf/${roundKey}/B_about_A`] =
+              digitsB;
+
+            this._setRoundPhase("A", roundNumber, "review_round");
+            this._setRoundPhase("B", roundNumber, "review_round");
+            if (roundNumber < TOTAL_ROUNDS) {
+              this._unlockNextRound("A", roundNumber);
+              this._unlockNextRound("B", roundNumber);
+            }
+
+            const db = getDb();
+            if (db && this.roomId) {
+              db.ref()
+                .update(dbUpdates)
+                .catch((err) => {
+                  console.error("[ROUND1 AUTO TCONF] update failed", err);
+                });
+            }
+            return; // no opponent guessing/confirm needed in round 1
+          }
+
           ["A", "B"].forEach((team) => {
             if (
               roundValue?.[team] &&
@@ -1306,8 +1299,6 @@ class GameManager {
               if (this.teams[otherTeam].length > 0) {
                 this.advanceTeamPhase(team, "guess_them", roundNumber);
               }
-              // Sblocco round successivo dopo conf_us
-              this._unlockNextRound(team, roundNumber);
             }
           });
         });
@@ -1386,24 +1377,20 @@ class GameManager {
           const phaseA = this.getRoundPhase("A", roundNumber);
           const phaseB = this.getRoundPhase("B", roundNumber);
 
-          console.log(`[TCONF CHECK] Round ${roundNumber}:`, {
-            tconfA: tconfA ? "✓" : "✗",
-            tconfB: tconfB ? "✓" : "✗",
-            phaseA,
-            phaseB,
-          });
-
           if (
             tconfA &&
             tconfB &&
             phaseA === "conf_them" &&
             phaseB === "conf_them"
           ) {
-            console.log(
-              `[TCONF] Both teams completed - moving to review_round for round ${roundNumber}`,
-            );
             this._setRoundPhase("A", roundNumber, "review_round");
             this._setRoundPhase("B", roundNumber, "review_round");
+
+            // Unlock next round only after everyone reaches review_round (except after round 8)
+            if (roundNumber < TOTAL_ROUNDS) {
+              this._unlockNextRound("A", roundNumber);
+              this._unlockNextRound("B", roundNumber);
+            }
           }
         });
         this._emit();
@@ -1449,10 +1436,6 @@ class GameManager {
     this.receivedTGuesses = this.receivedTGuesses || {};
     this.receivedTGuesses[targetTeam] = tguessValues;
 
-    console.log(
-      `[POPULATE TGUESS] Target team ${targetTeam} receives tguesses:`,
-      tguessValues,
-    );
     this._emit();
   }
 
@@ -1465,8 +1448,6 @@ class GameManager {
     const db = getDb();
     if (!db || !this.roomId) return;
 
-    console.log("[MANUAL LISTENERS] Creating fallback listeners...");
-
     this._uiListeners = this._uiListeners || [];
 
     // Manual tguesses listener
@@ -1477,30 +1458,16 @@ class GameManager {
       const newData = JSON.stringify(this.tguessesData);
 
       if (prevData !== newData) {
-        console.log(
-          "[MANUAL LISTENER] TGuesses data changed:",
-          this.tguessesData,
-        );
-        console.log("[MANUAL LISTENER] Calling UI update functions...");
-
         if (typeof updateGuessInputs === "function") {
           updateGuessInputs();
         }
         if (typeof updateReceivedTGuesses === "function") {
           updateReceivedTGuesses();
-          console.log("[MANUAL LISTENER] updateReceivedTGuesses called");
-        } else {
-          console.log("[MANUAL LISTENER] updateReceivedTGuesses not available");
         }
       }
     });
 
     this._uiListeners.push("manual-tguess-listener");
-    console.log(
-      "[MANUAL LISTENERS] Created " +
-        this._uiListeners.length +
-        " manual listeners",
-    );
   }
 
   _attachUIListeners() {
@@ -1561,19 +1528,8 @@ class GameManager {
    * Chiamato quando i giocatori hanno visto i pannelli THEM
    */
   advanceToNextRound() {
-    console.log("[ADVANCE ROUND] advanceToNextRound() called");
-    console.log(
-      "[ADVANCE ROUND] isCreator:",
-      this.isCreator,
-      "playerId:",
-      this.playerId,
-      "creatorId:",
-      this.creatorId,
-    );
-
     // Guard: solo l'host può avanzare il round
     if (!this.isCreator) {
-      console.log("[ADVANCE ROUND] ❌ BLOCKED - Only host can advance rounds");
       return;
     }
 
@@ -1581,34 +1537,24 @@ class GameManager {
     const me = this.players[this.playerId];
     const myTeam = me?.team;
     const myPhase = this.teamPhases?.[myTeam];
-    console.log("[ADVANCE ROUND] My team:", myTeam, "My phase:", myPhase);
 
     if (!myTeam) {
-      console.log("[ADVANCE ROUND] ❌ BLOCKED - Player has no team");
       return;
     }
 
     if (myPhase !== "review_round") {
-      console.log(
-        "[ADVANCE ROUND] ❌ BLOCKED - Not in review_round (current phase: " +
-          myPhase +
-          ")",
-      );
       return;
     }
 
     const db = getDb();
     if (!db || !this.roomId) {
-      console.error("[ADVANCE ROUND] No db or roomId!");
       return;
     }
 
     const nextRound = this.round + 1;
-    console.log(`[ADVANCE ROUND] Current: ${this.round}, Next: ${nextRound}`);
 
     if (nextRound > TOTAL_ROUNDS) {
       // Fine gioco
-      console.log("[ADVANCE ROUND] Game finished!");
       this.phase = "finished";
       db.ref(`rooms/${this.roomId}/state`).update({
         phase: "finished",
@@ -1616,27 +1562,15 @@ class GameManager {
       });
     } else {
       // Nuovo round: entrambi i team ripartono da clues
-      console.log(
-        `[ADVANCE ROUND] Moving to round ${nextRound}, setting both teams to clues`,
-      );
 
       // Genera nuovi codici casuali per il prossimo round
       const codeA = this._generateSingleCode();
       const codeB = this._generateSingleCode();
       const roundKey = `round_${nextRound}`;
 
-      console.log(
-        `[ADVANCE ROUND] Generated new codes for ${roundKey} - A: ${codeA}, B: ${codeB}`,
-      );
-
       // Active player deterministico per round
       const nextActiveA = this.getActivePlayer("A", nextRound);
       const nextActiveB = this.getActivePlayer("B", nextRound);
-
-      // NON modificare this.round localmente - lascia che il listener Firebase lo aggiorni
-      // this.round = nextRound;
-      // this.teamPhases.A = "clues";
-      // this.teamPhases.B = "clues";
 
       // Aggiorna Firebase con nuovo round, fasi, codici e active players
       const updates = {};
@@ -1652,16 +1586,7 @@ class GameManager {
       updates[`rooms/${this.roomId}/codes/A/${roundKey}`] = codeA;
       updates[`rooms/${this.roomId}/codes/B/${roundKey}`] = codeB;
 
-      db.ref()
-        .update(updates)
-        .then(() => {
-          console.log(
-            `[ADVANCE ROUND] Firebase updated successfully to round ${nextRound} with new codes and rotated active players`,
-          );
-        })
-        .catch((error) => {
-          console.error("[ADVANCE ROUND] Firebase update failed:", error);
-        });
+      db.ref().update(updates);
     }
   }
 }

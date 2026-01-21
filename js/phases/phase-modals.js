@@ -75,7 +75,7 @@ export function showCodesInPlaceholders(selectedRoundUI) {
     return Number.isFinite(parsed) ? parsed - 1 : null;
   });
   const clueInputs = currentView.querySelectorAll(
-    'input[type="text"][id*="clueword"]'
+    'input[type="text"][id*="clueword"]',
   );
 
   clueInputs.forEach((input, index) => {
@@ -103,13 +103,8 @@ export function hideCodesFromPlaceholders() {
   if (!currentView) return;
 
   const clueInputs = currentView.querySelectorAll(
-    'input[type="text"][id*="clueword"]'
+    'input[type="text"][id*="clueword"]',
   );
-
-  console.log("[CODE-TOGGLE] hideCodesFromPlaceholders", {
-    view: currentView.id,
-    inputs: clueInputs.length,
-  });
 
   clueInputs.forEach((input) => {
     const hasOriginal = input.dataset.originalPlaceholder !== undefined;
@@ -208,7 +203,6 @@ export function bindCodeButtons(showCodesCallback, hideCodesCallback) {
       let wordsLocked = false; // toggled via double click/tap
 
       const showWordsOnly = () => {
-        console.log("[CODE-TOGGLE] showWordsOnly", { wordsLocked });
         showCodesCallback();
         isShowingCodes = true;
         hideCenterCodeDisplay();
@@ -216,14 +210,12 @@ export function bindCodeButtons(showCodesCallback, hideCodesCallback) {
       };
 
       const hideAll = () => {
-        console.log("[CODE-TOGGLE] hideAll", { wordsLocked });
         hideCodesCallback();
         isShowingCodes = false;
         isShowingModal = false;
       };
 
       const showFull = () => {
-        console.log("[CODE-TOGGLE] showFull (hold)", { wordsLocked });
         showCodesCallback();
         isShowingCodes = true;
         isShowingModal = true;
@@ -294,7 +286,7 @@ export function bindCodeButtons(showCodesCallback, hideCodesCallback) {
           e.preventDefault();
           startHold(e);
         },
-        { passive: false }
+        { passive: false },
       );
 
       b.addEventListener(
@@ -315,7 +307,7 @@ export function bindCodeButtons(showCodesCallback, hideCodesCallback) {
             endHold(e);
           }
         },
-        { passive: true }
+        { passive: true },
       );
 
       b.addEventListener(
@@ -323,7 +315,7 @@ export function bindCodeButtons(showCodesCallback, hideCodesCallback) {
         (e) => {
           endHold(e);
         },
-        { passive: true }
+        { passive: true },
       );
     }
   });

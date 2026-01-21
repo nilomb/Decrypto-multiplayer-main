@@ -121,7 +121,7 @@ class TeamChat {
   async openChat() {
     if (!gameManager.roomId || !gameManager.getMyTeam()) {
       alert(
-        "Devi essere in una stanza e assegnato a una squadra per usare la chat."
+        "Devi essere in una stanza e assegnato a una squadra per usare la chat.",
       );
       return;
     }
@@ -475,7 +475,7 @@ class TeamChat {
       .filter(
         (message) =>
           message.playerId !== gameManager.playerId &&
-          message.timestamp > this.lastReadTimestamp
+          message.timestamp > this.lastReadTimestamp,
       );
 
     this.unreadCount = messageArray.length;
@@ -517,16 +517,11 @@ class TeamChat {
     }
 
     const chatPath = `rooms/${this.currentRoomId}/teamChats/${this.currentTeam}`;
-    console.log("[TeamChat] Setting up message listener on:", chatPath);
-
     this.chatRef = this.db.ref(chatPath);
     this.chatListener = (snapshot) => {
-      console.log("[TeamChat] Received message update:", snapshot.val());
       this.renderMessages(snapshot.val() || {});
     };
     this.chatRef.on("value", this.chatListener);
-
-    console.log("[TeamChat] Message listener attached");
   }
 
   renderMessages(messages) {
@@ -560,7 +555,7 @@ class TeamChat {
       ${
         !isOwnMessage
           ? `<div class="message-author">${this.escapeHtml(
-              message.playerName
+              message.playerName,
             )}</div>`
           : ""
       }
@@ -586,12 +581,9 @@ class TeamChat {
     };
 
     const chatPath = `rooms/${this.currentRoomId}/teamChats/${this.currentTeam}`;
-    console.log("[TeamChat] Sending message to path:", chatPath, message);
-
     try {
       const chatRef = this.db.ref(chatPath);
-      const result = await chatRef.push(message);
-      console.log("[TeamChat] Message sent successfully, key:", result.key);
+      await chatRef.push(message);
     } catch (error) {
       alert("Errore nell'invio del messaggio. Riprova.");
       if (this.input) this.input.value = text;

@@ -185,6 +185,8 @@ export function renderWords() {
 function updateTeamBadge() {
   const el = document.getElementById("team-badge");
   const elThem = document.getElementById("team-badge-them");
+  const viewUs = document.getElementById("view-us");
+  const viewThem = document.getElementById("view-them");
 
   const myTeam = gameManager.players[gameManager.playerId]?.team || "A";
   const teamText = myTeam; // display single-letter team badge
@@ -199,6 +201,17 @@ function updateTeamBadge() {
     elThem.textContent = teamText;
     elThem.classList.toggle("team-a", myTeam === "A");
     elThem.classList.toggle("team-b", myTeam === "B");
+  }
+
+  // Apply team classes to views for border color styling
+  if (viewUs) {
+    viewUs.classList.toggle("team-a", myTeam === "A");
+    viewUs.classList.toggle("team-b", myTeam === "B");
+  }
+
+  if (viewThem) {
+    viewThem.classList.toggle("team-a", myTeam === "A");
+    viewThem.classList.toggle("team-b", myTeam === "B");
   }
 }
 

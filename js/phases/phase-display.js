@@ -120,83 +120,6 @@ export function updateCluesDisplay(round) {
             input.classList.remove("disabled-clue");
           });
         }
-
-        // Populate THEM panels with opponent's clues (accumulated from all rounds)
-        // Use THEIR tconf (otherTeam about otherTeam) because THEY mapped THEIR clues to THEIR words
-        // Populate panels when:
-        // 1. Opponent's mapping (their tconf about themselves) exists for this round
-        // 2. We are in review_round
-        // 3. We are viewing a past round
-        // Opponent panels should appear only after THEY send us their confirmation
-        // (tconf otherTeam_about_myTeam = they tell us the right code for our words)
-        const theirConfirmToUs =
-          gameManager.tconfData?.[roundKey]?.[`${otherTeam}_about_${myTeam}`];
-        const hasTheirConfirmToUs = Array.isArray(theirConfirmToUs);
-
-        // Show only when their confirmation to us exists, and the round is current/past
-        const shouldPopulatePanels =
-          hasTheirConfirmToUs && displayRound <= (gameManager.round || 1);
-
-        if (shouldPopulatePanels) {
-          const otherTeamWords = gameManager.words?.[otherTeam] || [];
-          const panels = themContainer.querySelectorAll(".panel");
-
-          panels.forEach((panel) => {
-            const panelNum = parseInt(panel.getAttribute("data-panel"));
-            const top = panel.querySelector(".panel-top");
-            const ul = top?.querySelector("ul");
-
-            if (!ul) return;
-
-            // Clear existing clues
-            ul.innerHTML = "";
-
-            // Accumulate opponent clues from all rounds up to the displayed round
-            // Show cumulative history only up to the round being viewed
-            const maxRound = displayRound;
-            for (let r = 1; r <= maxRound; r++) {
-              const rKey = `round_${r}`;
-              const roundOtherClues =
-                gameManager.cluesData?.[rKey]?.[otherTeam];
-
-              // Use THEIR mapping (otherTeam's tconf about their own code)
-              // tconfData structure: {round_X: {teamA_about_teamB: [...], teamB_about_teamA: [...]}}
-              // We need otherTeam's tconf about themselves (not about us)
-              const theirTConfKey = `${otherTeam}_about_${otherTeam}`;
-              const roundTheirTConf =
-                gameManager.tconfData?.[rKey]?.[theirTConfKey];
-
-              if (!roundOtherClues?.clues || !roundTheirTConf) continue;
-
-              // Find which clue index maps to this panel number
-              // tconf is [num1, num2, num3] where each num is the panel (1-4)
-              // clues are [clue1, clue2, clue3]
-              // If tconf[0] === panelNum, then clues[0] goes to this panel
-              roundTheirTConf.forEach((mappedPanelNum, clueIndex) => {
-                if (
-                  mappedPanelNum === panelNum &&
-                  roundOtherClues.clues[clueIndex]
-                ) {
-                  const li = document.createElement("li");
-                  li.textContent = roundOtherClues.clues[clueIndex];
-                  ul.appendChild(li);
-                }
-              });
-            }
-
-            // Populate panel-bottom with the word (only once, doesn't change)
-            // Each panel has a fixed word: panel 1 → word[0], panel 2 → word[1], etc.
-            if (panelNum >= 1 && panelNum <= 4) {
-              const wordIndex = panelNum - 1; // Convert panel number (1-4) to array index (0-3)
-              if (otherTeamWords[wordIndex]) {
-                const bottom = panel.querySelector(".word-panel");
-                if (bottom) {
-                  bottom.textContent = otherTeamWords[wordIndex];
-                }
-              }
-            }
-          });
-        } // End of shouldPopulatePanels
       }
 
       // Also populate opponent clues in US view (opponent-inputs-container)
@@ -252,6 +175,69 @@ export function updateCluesDisplay(round) {
           input.value = "";
         });
       }
+    }
+  }
+
+  // Always populate THEM panels with opponent's clues (accumulated from all rounds)
+  // This should happen regardless of whether opponent has clues for current round
+  if (teamPhase !== "lobby") {
+    const otherTeam = myTeam === "A" ? "B" : "A";
+    const themContainer = document.getElementById("view-them");
+
+    if (themContainer) {
+      const panels = themContainer.querySelectorAll(".panel");
+
+      panels.forEach((panel) => {
+        const panelNum = parseInt(panel.getAttribute("data-panel"));
+        const top = panel.querySelector(".panel-top");
+        const ul = top?.querySelector("ul");
+
+        if (!ul) return;
+
+        // Clear existing clues
+        ul.innerHTML = "";
+
+        // Accumulate opponent clues from all rounds up to displayRound
+        const maxRound = displayRound;
+        for (let r = 1; r <= maxRound; r++) {
+          const rKey = `round_${r}`;
+          const roundOtherClues = gameManager.cluesData?.[rKey]?.[otherTeam];
+          const roundOtherConf = gameManager.confData?.[rKey]?.[otherTeam];
+
+          if (!roundOtherClues?.clues || !roundOtherConf) continue;
+
+          // Round 1: clues are visible immediately after conf
+          // Round 2+: clues are visible only after tconf (opponent confirmed their guesses)
+          if (r > 1) {
+            // For rounds 2+, check if we (myTeam) have confirmed opponent's guesses about our clues
+            const tconfKey = `${myTeam}_about_${otherTeam}`;
+            const roundTConf = gameManager.tconfData?.[rKey]?.[tconfKey];
+
+            if (!roundTConf) continue; // Skip this round if tconf doesn't exist
+          }
+
+          // Convert conf to array if needed
+          const roundOtherConfArray = Array.isArray(roundOtherConf)
+            ? roundOtherConf
+            : typeof roundOtherConf === "object" &&
+                Object.keys(roundOtherConf).length > 0
+              ? roundOtherConf[Object.keys(roundOtherConf)[0]]
+              : null;
+
+          if (!roundOtherConfArray) continue;
+
+          // Find which clue corresponds to this panel number
+          const clueIndex = roundOtherConfArray.findIndex(
+            (num) => num === panelNum,
+          );
+
+          if (clueIndex !== -1 && roundOtherClues.clues[clueIndex]) {
+            const li = document.createElement("li");
+            li.textContent = roundOtherClues.clues[clueIndex];
+            ul.appendChild(li);
+          }
+        }
+      });
     }
   }
 }
@@ -409,6 +395,17 @@ export function updateConfDisplay(round) {
 
       if (!roundCluesData?.clues || !roundConfData) continue;
 
+      // Round 1: clues are visible immediately after conf
+      // Round 2+: clues are visible only after opponent confirmed their guesses (tconf exists)
+      if (r > 1) {
+        // For rounds 2+, check if opponent has confirmed their guesses about our clues
+        const otherTeam = myTeam === "A" ? "B" : "A";
+        const tconfKey = `${otherTeam}_about_${myTeam}`;
+        const roundTConf = gameManager.tconfData?.[rKey]?.[tconfKey];
+
+        if (!roundTConf) continue; // Skip this round if opponent hasn't confirmed yet
+      }
+
       // Convert conf to array if needed
       const roundConfArray = Array.isArray(roundConfData)
         ? roundConfData
@@ -444,10 +441,35 @@ export function updateTGuessesDisplay(round) {
   if (!gameManager.tguessesData) return;
 
   const displayRound = round !== undefined ? round : getSelectedRound();
-  const roundKey = `round_${displayRound}`;
   const otherTeam = myTeam === "A" ? "B" : "A";
-  const tguessKey = `${otherTeam}_about_${myTeam}`;
-  const tguesses = gameManager.tguessesData[roundKey]?.[tguessKey];
+  const currentGameRound = gameManager.round || 1;
+
+  // Only use fallback when viewing PAST rounds (not current round)
+  // For the current round, show empty if no data exists yet
+  let targetRound = displayRound;
+  let tguesses = null;
+
+  if (displayRound < currentGameRound) {
+    // Viewing a past round - use fallback to find most recent tguesses
+    for (let r = displayRound; r >= 1; r--) {
+      const rKey = `round_${r}`;
+      const candidate =
+        gameManager.tguessesData?.[rKey]?.[`${otherTeam}_about_${myTeam}`];
+      if (Array.isArray(candidate)) {
+        tguesses = candidate;
+        targetRound = r;
+        break;
+      }
+    }
+  } else {
+    // Viewing current round - only show data for THIS round, no fallback
+    const rKey = `round_${displayRound}`;
+    const candidate =
+      gameManager.tguessesData?.[rKey]?.[`${otherTeam}_about_${myTeam}`];
+    if (Array.isArray(candidate)) {
+      tguesses = candidate;
+    }
+  }
 
   const usContainer = document.getElementById("view-us");
   if (!usContainer) return;
@@ -455,21 +477,14 @@ export function updateTGuessesDisplay(round) {
   const tguessInputs = usContainer.querySelectorAll(".tguess-input");
 
   if (!tguesses || !Array.isArray(tguesses)) {
-    // Clear all tguess inputs when no data exists
+    // Clear all tguess inputs when no data exists, but keep them readonly
     tguessInputs.forEach((input) => {
       input.value = "";
-      input.removeAttribute("readonly");
-      input.classList.remove("disabled-clue");
+      input.setAttribute("readonly", "readonly");
+      input.classList.add("disabled-clue");
     });
     return;
   }
-
-  console.log("[TGUESS][DISPLAY]", {
-    round: displayRound,
-    myTeam,
-    from: otherTeam,
-    tguesses,
-  });
 
   tguesses.forEach((val, idx) => {
     if (tguessInputs[idx]) {

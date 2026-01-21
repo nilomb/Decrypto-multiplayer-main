@@ -16,7 +16,7 @@ export function initCollaborativeInputs() {
     input.addEventListener("input", () => {
       // Read all guess-input values
       const guessValues = Array.from(
-        document.querySelectorAll(".guess-input")
+        document.querySelectorAll(".guess-input"),
       ).map((inp) => inp.value || "");
 
       gameManager.updateCollaborativeGuessUs(guessValues);
@@ -58,7 +58,7 @@ export function initCollaborativeInputs() {
 
       // Update collaborative data
       const tguess = inputIds.map(
-        (id) => document.getElementById(id)?.value || ""
+        (id) => document.getElementById(id)?.value || "",
       );
       gameManager.updateCollaborativeTGuess(tguess);
 
@@ -142,9 +142,9 @@ export function updateCollaborativeTGuesses() {
     const tguessKey = `${myTeam}_about_${otherTeam}`;
     const collabData = gameManager.collabTGuessesData?.[roundKey]?.[tguessKey];
 
-    if (collabData?.values && Array.isArray(collabData.values)) {
-      const inputsToUpdate = ["guessthem1", "guessthem2", "guessthem3"];
+    const inputsToUpdate = ["guessthem1", "guessthem2", "guessthem3"];
 
+    if (collabData?.values && Array.isArray(collabData.values)) {
       inputsToUpdate.forEach((id, i) => {
         const inp = document.getElementById(id);
         if (inp && !inp.disabled) {
@@ -153,6 +153,14 @@ export function updateCollaborativeTGuesses() {
           if (inp.value !== newValue) {
             inp.value = newValue;
           }
+        }
+      });
+    } else {
+      // No collaborative data for this round - clear inputs if they are editable
+      inputsToUpdate.forEach((id) => {
+        const inp = document.getElementById(id);
+        if (inp && !inp.disabled && !inp.hasAttribute("readonly")) {
+          inp.value = "";
         }
       });
     }
@@ -182,7 +190,7 @@ export function updateTypingIndicators() {
     (playerId) =>
       playerId !== gameManager.playerId &&
       typingData[playerId]?.isTyping &&
-      Date.now() - typingData[playerId]?.timestamp < 3000 // Only show if recent
+      Date.now() - typingData[playerId]?.timestamp < 3000, // Only show if recent
   );
 
   if (typingPlayers.length > 0) {

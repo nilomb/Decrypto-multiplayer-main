@@ -12,7 +12,7 @@ import { getSelectedRound } from "./phase-rounds.js";
 export function initGuessUsPhase(
   showToast,
   updateClueInputs,
-  updateGuessInputs
+  updateGuessInputs,
 ) {
   const btnSubmitGuess = document.getElementById("btn-submit-guess");
 
@@ -63,14 +63,7 @@ export function initGuessUsPhase(
     });
     btnSubmitGuess.disabled = true;
 
-    // In single-player mode, advance to conf_us immediately
-    const teamMembers = gameManager.teams[myTeam] || [];
-    const nonActiveMembers = teamMembers.filter(
-      (id) => id !== gameManager.activePlayers[myTeam]
-    );
-
-    if (nonActiveMembers.length === 0) {
-      gameManager.advanceTeamPhase(myTeam, "conf_us", getSelectedRound());
-    }
+    // After submitting guesses, move team to conf_us so active sees the confirm button
+    gameManager.advanceTeamPhase(myTeam, "conf_us", getSelectedRound());
   });
 }

@@ -84,13 +84,6 @@ export function initGuessThemPhase(showToast) {
       return;
     }
 
-    console.log("[TGUESS][SAVE]", {
-      round: selectedRound,
-      team: myTeam,
-      about: otherTeam,
-      tguesses,
-    });
-
     // Advance to conf_them phase
     if (currentPhase !== "conf_them") {
       gameManager.advanceTeamPhase(myTeam, "conf_them", getSelectedRound());
@@ -98,7 +91,7 @@ export function initGuessThemPhase(showToast) {
 
     // Disable tguess inputs after submission
     const tguessInputs = document.querySelectorAll(
-      "#view-them .guessthem-input"
+      "#view-them .guessthem-input",
     );
     tguessInputs.forEach((inp) => {
       inp.disabled = true;

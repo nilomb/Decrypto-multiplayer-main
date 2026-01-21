@@ -22,13 +22,13 @@ export function initFirebase(config = firebaseConfig) {
   if (_db) return _db;
   if (!window.firebase || !window.firebase.initializeApp) {
     console.warn(
-      "[Firebase] SDK non presente. Aggiungi gli script CDN prima di inizializzare."
+      "[Firebase] SDK non presente. Aggiungi gli script CDN prima di inizializzare.",
     );
     return null;
   }
   if (!config) {
     console.warn(
-      "[Firebase] Config mancante. Passa il firebaseConfig a initFirebase()."
+      "[Firebase] Config mancante. Passa il firebaseConfig a initFirebase().",
     );
     return null;
   }
@@ -40,8 +40,8 @@ export function initFirebase(config = firebaseConfig) {
   _auth
     .signInAnonymously()
     .then(() => {
-      _authReady = true;
       console.log("[Firebase Auth] Anonymous sign-in successful");
+      _authReady = true;
     })
     .catch((error) => {
       console.error("[Firebase Auth] Error:", error.code, error.message);

@@ -750,6 +750,25 @@ body.them .us-layout .top-box {
   position: relative; /* anchor overlayed panel-top */
 }
 
+/* View-specific panel border colors */
+/* Team A: US blue, THEM red */
+#view-us.team-a .panel {
+  border-color: #4A90E2; /* Blue for Team A US panels */
+}
+
+#view-them.team-a .panel {
+  border-color: #E74C3C; /* Red for Team A THEM panels */
+}
+
+/* Team B: US red, THEM blue */
+#view-us.team-b .panel {
+  border-color: #E74C3C; /* Red for Team B US panels */
+}
+
+#view-them.team-b .panel {
+  border-color: #4A90E2; /* Blue for Team B THEM panels */
+}
+
 .us-layout .panel-top,
 .panel-top {
   flex: 1;
