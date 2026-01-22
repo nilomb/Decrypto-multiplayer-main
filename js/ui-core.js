@@ -364,6 +364,10 @@ function switchView(target) {
   }
 }
 
+function getCurrentView() {
+  return currentView;
+}
+
 function resetInputs(selectors = []) {
   selectors.forEach((selector) => {
     document.querySelectorAll(selector).forEach((input) => {
@@ -1065,6 +1069,8 @@ function initUI() {
 
 // Export for global access
 window.initUI = initUI;
+window.switchView = switchView;
+window.getCurrentView = getCurrentView;
 
 // Auto-initialize when DOM is ready
 if (document.readyState === "loading") {
