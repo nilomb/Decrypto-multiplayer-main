@@ -1126,7 +1126,7 @@ body.them .us-layout .top-box {
   background: rgba(0, 0, 0, 0.7);
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* keep chat anchored to bottom so keyboard overlays it on iOS */
   justify-content: center;
 }
 
@@ -1136,14 +1136,15 @@ body.them .us-layout .top-box {
 
 .chat-container {
   background: white;
-  border-radius: 8px;
+  border-radius: 8px 8px 0 0;
   width: 90%;
   max-width: 400px;
-  height: 80%;
-  max-height: 500px;
+  height: auto;
+  max-height: 60vh; /* prefer viewport-relative height so keyboard can overlay on mobile */
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
 }
 
 .chat-header {
@@ -1247,6 +1248,7 @@ body.them .us-layout .top-box {
   border-radius: 4px;
   font-size: 14px;
   outline: none;
+  min-width: 0; /* allow input to shrink inside flex container on iOS (prevents send button overflow) */
 }
 
 .chat-input-area input:focus {
